@@ -31,7 +31,6 @@ NSE_DAILY_BUYBACK_REDEMPTION= "https://nsearchives.nseindia.com/content/RSS/Dail
 NSE_FINANCIAL_RESULTS= "https://nsearchives.nseindia.com/content/RSS/Financial_Results.xml"
 NSE_INSIDER_TRADING= "https://nsearchives.nseindia.com/content/RSS/Insider_Trading.xml"
 NSE_ANNOUNCEMENTS= "https://nsearchives.nseindia.com/content/RSS/Online_announcements.xml"
-FT_NEWS= "https://www.ft.com/myft/following/e538ebdb-1a20-48f7-adb5-a5e79d1241c4.rss"
 NSE_CORPORATE_ACTIONS = "https://nsearchives.nseindia.com/content/RSS/Corporate_action.xml"
 LIVEMINT_MARKETS = "https://www.livemint.com/rss/markets"
 ECONOMIC_TIMES_MARKETS = "https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms"
@@ -53,7 +52,6 @@ FEEDS = [
     ("NSE Financial Results",NSE_FINANCIAL_RESULTS),
     ("NSE Insider Trading",NSE_INSIDER_TRADING),
     ("NSE Announcements",NSE_ANNOUNCEMENTS),
-    ("FT News",FT_NEWS),
     ("NSE Corporate Actions (Official)", NSE_CORPORATE_ACTIONS),
     ("LiveMint Markets", LIVEMINT_MARKETS),
     ("Economic Times Markets", ECONOMIC_TIMES_MARKETS),
@@ -146,10 +144,11 @@ def fetch_once():
                 if not title:
                     continue
 
-                # NSE = always include
-                if source != "NSE Corporate Actions (Official)":
+                # Always include official NSE feeds; filter only non-NSE sources
+                if not source.startswith("NSE "):
                     if not passes_filter(title):
                         continue
+
 
                 pub = to_ts(e.get("published_parsed")) or to_ts(e.get("updated_parsed"))
 
