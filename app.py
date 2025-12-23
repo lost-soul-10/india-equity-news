@@ -27,6 +27,11 @@ DB_PATH = "news.db"
 POLL_SECONDS = 60
 
 # RSS FEEDS
+NSE_DAILY_BUYBACK_REDEMPTION= "https://nsearchives.nseindia.com/content/RSS/Daily_Buyback.xml"
+NSE_FINANCIAL_RESULTS= "https://nsearchives.nseindia.com/content/RSS/Financial_Results.xml"
+NSE_INSIDER_TRADING= "https://nsearchives.nseindia.com/content/RSS/Insider_Trading.xml"
+NSE_ANNOUNCEMENTS= "https://nsearchives.nseindia.com/content/RSS/Online_announcements.xml"
+FT_NEWS= "https://www.ft.com/myft/following/e538ebdb-1a20-48f7-adb5-a5e79d1241c4.rss"
 NSE_CORPORATE_ACTIONS = "https://nsearchives.nseindia.com/content/RSS/Corporate_action.xml"
 LIVEMINT_MARKETS = "https://www.livemint.com/rss/markets"
 ECONOMIC_TIMES_MARKETS = "https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms"
@@ -39,11 +44,16 @@ def google_news_rss(query: str, hl="en-IN", gl="IN", ceid="IN:en") -> str:
     )
 
 GOOGLE_NEWS_RSS = google_news_rss(
-    '(NSE OR BSE OR "bonus issue" OR dividend OR buyback OR "stock split" OR rights) '
+    '(NSE OR BSE OR "bonus issue" OR dividend OR buyback OR "stock split" OR rights issue) '
     '-crypto -bitcoin -ethereum when:2d'
 )
 
 FEEDS = [
+    ("NSE Daily Buyback Redemption",NSE_DAILY_BUYBACK_REDEMPTION),
+    ("NSE Financial Results",NSE_FINANCIAL_RESULTS),
+    ("NSE Insider Trading",NSE_INSIDER_TRADING),
+    ("NSE Announcements",NSE_ANNOUNCEMENTS),
+    ("FT News",FT_NEWS),
     ("NSE Corporate Actions (Official)", NSE_CORPORATE_ACTIONS),
     ("LiveMint Markets", LIVEMINT_MARKETS),
     ("Economic Times Markets", ECONOMIC_TIMES_MARKETS),
@@ -52,7 +62,7 @@ FEEDS = [
 
 INCLUDE_KEYWORDS = [
     "nse", "bse", "nifty", "sensex",
-    "dividend", "buyback", "split", "bonus", "rights",
+    "dividend", "buyback", "split", "bonus", "rights issue",
     "ipo", "results", "earnings", "shares", "stock", "equity",
 ]
 EXCLUDE_KEYWORDS = ["crypto", "bitcoin", "ethereum"]
@@ -202,7 +212,7 @@ PAGE = """
 <h2>Indian Equity Markets</h2>
 
 <form class="row" method="get" action="/">
-  <input name="q" value="{{q}}" placeholder="Keyword (e.g., dividend, bonus, rights, buyback, reliance)" size="55">
+  <input name="q" value="{{q}}" placeholder="Keyword (e.g., dividend, bonus, rights issue, buyback, reliance)" size="55">
   <select name="src">
     <option value="">All sources</option>
     {% for s in sources %}
