@@ -9,7 +9,7 @@ from urllib.parse import quote_plus
 from zoneinfo import ZoneInfo
 
 import feedparser
-from flask import Flask, jsonify, request, make_response
+from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 
@@ -47,9 +47,9 @@ def fmt_ts_ist(ts: int | None) -> str | None:
 # ----------------------------
 # Feeds (your list)
 # ----------------------------
-NSE_DAILY_BUYBACK_REDEMPTION = "https://nsearchives.nseindia.com/content/RSS/Daily_Buyback.xml"
+
 NSE_FINANCIAL_RESULTS = "https://nsearchives.nseindia.com/content/RSS/Financial_Results.xml"
-NSE_INSIDER_TRADING = "https://nsearchives.nseindia.com/content/RSS/Insider_Trading.xml"
+
 NSE_ANNOUNCEMENTS = "https://nsearchives.nseindia.com/content/RSS/Online_announcements.xml"
 NSE_CORPORATE_ACTIONS = "https://nsearchives.nseindia.com/content/RSS/Corporate_action.xml"
 
@@ -69,9 +69,9 @@ GOOGLE_NEWS_RSS = google_news_rss(
 )
 
 FEEDS = [
-    ("NSE Daily Buyback Redemption", NSE_DAILY_BUYBACK_REDEMPTION),
+    
     ("NSE Financial Results", NSE_FINANCIAL_RESULTS),
-    ("NSE Insider Trading", NSE_INSIDER_TRADING),
+    
     ("NSE Announcements", NSE_ANNOUNCEMENTS),
     ("NSE Corporate Actions (Official)", NSE_CORPORATE_ACTIONS),
     ("LiveMint Markets", LIVEMINT_MARKETS),
@@ -82,7 +82,7 @@ FEEDS = [
 INCLUDE_KEYWORDS = [
     "nse", "bse", "nifty", "sensex",
     "dividend", "buyback", "split", "bonus", "rights issue",
-    "ipo", "results", "earnings", "shares", "stock", "equity", "equities",
+    "ipo", "results", "earnings", "shares", "stock", "equity", "equities","gold","silver","commodities"
 ]
 EXCLUDE_KEYWORDS = ["crypto", "bitcoin", "ethereum"]
 
