@@ -9,7 +9,7 @@ from urllib.parse import quote_plus
 from zoneinfo import ZoneInfo
 
 import feedparser
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, make_response
 
 app = Flask(__name__)
 
@@ -100,8 +100,9 @@ def passes_filter(text: str) -> bool:
 # ----------------------------
 # API
 # ----------------------------
-@app.get("/news")
+@app.get("/api/news")
 def api_news():
+    ...
     q = (request.args.get("q") or "").strip().lower()
     src = (request.args.get("src") or "").strip()
 
