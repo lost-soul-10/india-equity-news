@@ -1,0 +1,127 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Indian Equity Markets</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 24px; max-width: 1000px; }
+    .row { display:flex; gap:10px; margin: 12px 0; flex-wrap:wrap; align-items:center; }
+    input, select, button { padding:10px; font-size:14px; }
+    .meta { color:#555; font-size:13px; margin: 10px 0 18px; }
+    .item { padding:14px 0; border-bottom:1px solid #ddd; }
+    .src { font-size:12px; color:#666; margin-top:6px; }
+    .sum { font-size:13px; color:#222; margin-top:6px; }
+    a { color:#111; text-decoration:none; }
+    a:hover { text-decoration:underline; }
+  </style>
+</head>
+<body>
+  <h2>Indian Equity Markets</h2>
+
+  <div class="row">
+    <input id="q" placeholder="Keyword (e.g., dividend, bonus, rights issue, buyback, reliance)" size="55" />
+    <select id="src">
+      <option value="">All sources</option>
+    </select>
+    <button id="apply">Apply</button>
+    <button id="reset">Reset</button>
+    <button id="refresh">Refresh</button>
+  </div>
+
+  <div class="meta" id="status">Loading...</div>
+  <div id="list"></div>
+
+  <script>
+    const qEl = document.getElementById("q");
+    const srcEl = document.getElementById("src");
+    const statusEl = document.getElementById("status");
+    const listEl = document.getElementById("list");
+
+    function esc(s) {
+      return (s || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
+
+    function setFromURL() {
+      const p = new URLSearchParams(location.search);
+      qEl.value = p.get("q") || "";
+      srcEl.value = p.get("src") || "";
+    }
+
+    function updateURL() {
+      const p = new URLSearchParams();
+      if (qEl.value.trim()) p.set("q", qEl.value.trim());
+      if (srcEl.value.trim()) p.set("src", srcEl.value.trim());
+      history.replaceState({}, "", `${location.pathname}?${p.toString()}`);
+    }
+
+    function populateSources(sources) {
+      const current = srcEl.value;
+      const existing = new Set([...srcEl.options].map(o => o.value));
+      (sources || []).forEach(s => {
+        if (!existing.has(s)) {
+          const opt = document.createElement("option");
+          opt.value = s;
+          opt.textContent = s;
+          srcEl.appendChild(opt);
+        }
+      });
+      srcEl.value = current;
+    }
+
+    function render(items) {
+      if (!items || items.length === 0) {
+        listEl.innerHTML = "<p>No items found. Try removing filters or refreshing.</p>";
+        return;
+      }
+
+      listEl.innerHTML = items.map(i => `
+        <div class="item">
+          <div>
+            <a href="${esc(i.link)}" target="_blank" rel="noopener noreferrer">${esc(i.title)}</a>
+          </div>
+          ${i.summary ? `<div class="sum">${esc(i.summary)}</div>` : ""}
+          <div class="src">${esc(i.source)}${i.published ? " • " + esc(i.published) : ""}</div>
+        </div>
+      `).join("");
+    }
+
+    async function fetchNews() {
+      updateURL();
+
+      const p = new URLSearchParams();
+      if (qEl.value.trim()) p.set("q", qEl.value.trim());
+      if (srcEl.value.trim()) p.set("src", srcEl.value.trim());
+
+      statusEl.textContent = "Fetching feeds...";
+      listEl.innerHTML = "";
+
+      const res = await fetch(`/api/news?${p.toString()}`, { cache: "no-store" });
+      const data = await res.json();
+
+      populateSources(data.sources);
+      statusEl.textContent = `Showing ${data.count} items • Updated: ${data.generated_at}`;
+      render(data.items);
+    }
+
+    document.getElementById("apply").addEventListener("click", fetchNews);
+    document.getElementById("refresh").addEventListener("click", fetchNews);
+
+    document.getElementById("reset").addEventListener("click", () => {
+      qEl.value = "";
+      srcEl.value = "";
+      fetchNews();
+    });
+
+    setFromURL();
+    fetchNews();
+
+    // Optional auto-refresh every 2 minutes
+    setInterval(fetchNews, 120000);
+  </script>
+</body>
+</html>
