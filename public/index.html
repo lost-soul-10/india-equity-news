@@ -39,7 +39,10 @@
     const listEl = document.getElementById("list");
 
     function escapeHtml(s) {
-      return (s || "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+      return (s || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;");
     }
 
     function setQueryFromURL() {
@@ -52,7 +55,8 @@
       const p = new URLSearchParams();
       if (qEl.value.trim()) p.set("q", qEl.value.trim());
       if (srcEl.value.trim()) p.set("src", srcEl.value.trim());
-      history.replaceState({}, "", `${location.pathname}?${p.toString()}`);
+      const qs = p.toString();
+      history.replaceState({}, "", qs ? `${location.pathname}?${qs}` : `${location.pathname}`);
     }
 
     async function loadSourcesIfNeeded(sources) {
@@ -86,27 +90,39 @@
     }
 
     async function fetchNews() {
-      updateURL();
-      const p = new URLSearchParams();
-      if (qEl.value.trim()) p.set("q", qEl.value.trim());
-      if (srcEl.value.trim()) p.set("src", srcEl.value.trim());
+      try {
+        updateURL();
 
-      statusEl.textContent = "Fetching feeds...";
-      listEl.innerHTML = "";
+        const p = new URLSearchParams();
+        if (qEl.value.trim()) p.set("q", qEl.value.trim());
+        if (srcEl.value.trim()) p.set("src", srcEl.value.trim());
 
-      const res = await fetch(`/api/news?${p.toString()}`, { cache: "no-store" });
+        statusEl.textContent = "Fetching feeds...";
+        listEl.innerHTML = "";
 
-if (!res.ok) {
-  const text = await res.text();
-  throw new Error(`API ${res.status}: ${text.slice(0, 300)}`);
-}
+        const res = await fetch(`/api/news?${p.toString()}`, { cache: "no-store" });
 
-const data = await res.json();
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(`API ${res.status}: ${text.slice(0, 300)}`);
+        }
 
+        const data = await res.json();
+        await loadSourcesIfNeeded(data.sources);
 
-      await loadSourcesIfNeeded(data.sources);
-      statusEl.textContent = `Showing ${data.count} items • Updated: ${data.generated_at}`;
-      render(data.items);
+        statusEl.textContent = `Showing ${data.count} items • Updated: ${data.generated_at}`;
+        render(data.items);
+
+      } catch (err) {
+        statusEl.textContent = `Error loading news: ${err?.message || err}`;
+        listEl.innerHTML = `
+          <p>
+            The API failed. This usually means the Vercel function crashed or dependencies weren't installed.
+            Try redeploying (without cache) and refresh.
+          </p>
+        `;
+        console.error(err);
+      }
     }
 
     document.getElementById("apply").addEventListener("click", fetchNews);
@@ -122,8 +138,10 @@ const data = await res.json();
     setQueryFromURL();
     fetchNews();
 
-    // optional: auto refresh every 2 minutes
-    setInterval(fetchNews, 120000);
+    // auto refresh every 2 minutes (only when tab is visible)
+    setInterval(() => {
+      if (document.visibilityState === "visible") fetchNews();
+    }, 120000);
   </script>
 </body>
 </html>
