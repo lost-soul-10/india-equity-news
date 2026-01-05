@@ -1,5 +1,5 @@
 venv/
-.venv/
 __pycache__/
-news.db
-.DS_Store
+*.pyc
+*.db
+*-journal
