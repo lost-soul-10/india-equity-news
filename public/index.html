@@ -1,48 +1,335 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Indian Equity Markets</title>
+
+  <!-- Nice font (free, no build step) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 24px; max-width: 1000px; }
-    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 12px 0; }
-    input, select, button { padding: 10px; font-size: 14px; }
-    .meta { color: #555; font-size: 13px; margin: 10px 0 18px; }
-    .item { padding: 14px 0; border-bottom: 1px solid #ddd; }
-    .src { font-size: 12px; color: #666; margin-top: 6px; }
-    .sum { font-size: 13px; color: #222; margin-top: 6px; }
-    a { color: #111; text-decoration: none; }
+    :root{
+      --bg: #0b1220;
+      --panel: rgba(255,255,255,.06);
+      --panel-2: rgba(255,255,255,.09);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.70);
+      --faint: rgba(255,255,255,.55);
+      --border: rgba(255,255,255,.12);
+      --shadow: 0 20px 60px rgba(0,0,0,.45);
+      --shadow-soft: 0 10px 30px rgba(0,0,0,.35);
+
+      --accent: #7c3aed;   /* purple */
+      --accent-2: #22c55e; /* green */
+      --danger: #ef4444;
+      --warning: #f59e0b;
+
+      --radius: 18px;
+      --radius-sm: 12px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: "Plus Jakarta Sans", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background:
+        radial-gradient(1000px 600px at 20% 0%, rgba(124,58,237,.35), transparent 55%),
+        radial-gradient(900px 600px at 80% 20%, rgba(34,197,94,.20), transparent 55%),
+        radial-gradient(800px 500px at 30% 80%, rgba(59,130,246,.20), transparent 60%),
+        var(--bg);
+      color: var(--text);
+    }
+
+    a { color: inherit; text-decoration: none; }
     a:hover { text-decoration: underline; }
+
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px 18px 60px;
+    }
+
+    header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .title {
+      display: grid;
+      gap: 6px;
+    }
+
+    .title h1 {
+      margin: 0;
+      font-size: 28px;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+    }
+
+    .title p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.4;
+      max-width: 62ch;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .dot {
+      width: 8px; height: 8px; border-radius: 999px;
+      background: var(--accent-2);
+      box-shadow: 0 0 0 4px rgba(34,197,94,.18);
+    }
+
+    /* Sticky toolbar */
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      margin-top: 16px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: rgba(10,16,30,.55);
+      backdrop-filter: blur(14px);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 220px auto auto auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    @media (max-width: 860px) {
+      .row {
+        grid-template-columns: 1fr;
+      }
+      .row .btns { display: flex; gap: 10px; flex-wrap: wrap; }
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      outline: none;
+      font-size: 14px;
+    }
+    input::placeholder { color: rgba(255,255,255,.45); }
+    select option { color: #111; }
+
+    button {
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      transition: transform .05s ease, background .15s ease, border-color .15s ease;
+      white-space: nowrap;
+    }
+    button:hover {
+      background: rgba(255,255,255,.10);
+      border-color: rgba(255,255,255,.18);
+    }
+    button:active { transform: translateY(1px); }
+
+    .btn-primary {
+      background: linear-gradient(135deg, rgba(124,58,237,.9), rgba(59,130,246,.75));
+      border-color: rgba(255,255,255,.18);
+    }
+    .btn-primary:hover { background: linear-gradient(135deg, rgba(124,58,237,1), rgba(59,130,246,.9)); }
+
+    .btn-ghost {
+      background: rgba(255,255,255,.03);
+    }
+
+    .meta {
+      margin: 14px 2px 10px;
+      color: var(--muted);
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .count {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .grid {
+      display: grid;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: rgba(255,255,255,.05);
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+    }
+
+    .card-inner {
+      padding: 14px 16px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .card a.title-link {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      line-height: 1.25;
+    }
+
+    .summary {
+      color: rgba(255,255,255,.78);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .subrow {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      margin-top: 2px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .src-dot {
+      width: 8px; height: 8px; border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 4px rgba(124,58,237,.15);
+    }
+
+    .time {
+      color: rgba(255,255,255,.55);
+      font-size: 12px;
+    }
+
+    .error {
+      border: 1px solid rgba(239,68,68,.35);
+      background: rgba(239,68,68,.10);
+      color: rgba(255,255,255,.9);
+      padding: 12px 14px;
+      border-radius: 14px;
+      margin-top: 12px;
+      font-size: 13px;
+      line-height: 1.45;
+      white-space: pre-wrap;
+    }
+
+    .footer {
+      margin-top: 18px;
+      color: rgba(255,255,255,.50);
+      font-size: 12px;
+    }
   </style>
 </head>
+
 <body>
-  <h2>Indian Equity Markets</h2>
+  <div class="wrap">
+    <header>
+      <div class="title">
+        <h1>Indian Equity Markets</h1>
+        <p>Clean, fast headlines from NSE + curated market sources. Filter by keyword or source — auto-refreshes every 2 minutes.</p>
+      </div>
+      <div class="pill" title="API status">
+        <span class="dot" id="apiDot"></span>
+        <span id="apiText">Checking API…</span>
+      </div>
+    </header>
 
-  <div class="row">
-    <input id="q" placeholder="Keyword (e.g., dividend, bonus, rights, buyback, reliance)" size="55" />
-    <select id="src">
-      <option value="">All sources</option>
-    </select>
-    <button id="apply">Apply</button>
-    <button id="reset">Reset</button>
-    <button id="refresh">Refresh</button>
+    <div class="toolbar">
+      <div class="row">
+        <input id="q" placeholder="Keyword (e.g., dividend, bonus, rights, buyback, Reliance, Tata)" />
+        <select id="src">
+          <option value="">All sources</option>
+        </select>
+
+        <button class="btn-primary" id="apply">Apply</button>
+        <button class="btn-ghost" id="reset">Reset</button>
+        <button class="btn-ghost" id="refresh">Refresh</button>
+      </div>
+      <div class="meta">
+        <div class="count" id="status">Loading…</div>
+        <div class="count">Tip: try “dividend”, “buyback”, “stock split”, “results”</div>
+      </div>
+    </div>
+
+    <div id="err" class="error" style="display:none;"></div>
+    <div class="grid" id="list"></div>
+
+    <div class="footer">
+      Built as a lightweight Flask + RSS aggregator. Data comes from public feeds; headlines may lag by minutes.
+    </div>
   </div>
-
-  <div class="meta" id="status">Loading...</div>
-  <div id="list"></div>
 
   <script>
     const qEl = document.getElementById("q");
     const srcEl = document.getElementById("src");
     const statusEl = document.getElementById("status");
     const listEl = document.getElementById("list");
+    const errEl = document.getElementById("err");
+    const apiDot = document.getElementById("apiDot");
+    const apiText = document.getElementById("apiText");
 
     function escapeHtml(s) {
       return (s || "")
         .replaceAll("&", "&amp;")
         .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;");
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
     }
 
     function setQueryFromURL() {
@@ -61,7 +348,6 @@
 
     async function loadSourcesIfNeeded(sources) {
       if (!sources || !sources.length) return;
-      // populate dropdown once, keep user's selection
       const current = srcEl.value;
       const existing = new Set([...srcEl.options].map(o => o.value));
       sources.forEach(s => {
@@ -77,51 +363,84 @@
 
     function render(items) {
       if (!items || items.length === 0) {
-        listEl.innerHTML = "<p>No items found. Try removing filters or refreshing.</p>";
+        listEl.innerHTML = `
+          <div class="card">
+            <div class="card-inner">
+              <div style="font-weight:700;">No items found</div>
+              <div class="summary">Try removing filters or hitting Refresh.</div>
+            </div>
+          </div>
+        `;
         return;
       }
+
       listEl.innerHTML = items.map(i => `
-        <div class="item">
-          <div><a href="${escapeHtml(i.link)}" target="_blank" rel="noopener noreferrer">${escapeHtml(i.title)}</a></div>
-          ${i.summary ? `<div class="sum">${escapeHtml(i.summary)}</div>` : ""}
-          <div class="src">${escapeHtml(i.source)}${i.published ? " • " + escapeHtml(i.published) : ""}</div>
+        <div class="card">
+          <div class="card-inner">
+            <a class="title-link" href="${escapeHtml(i.link)}" target="_blank" rel="noopener noreferrer">
+              ${escapeHtml(i.title)}
+            </a>
+            ${i.summary ? `<div class="summary">${escapeHtml(i.summary)}</div>` : ""}
+            <div class="subrow">
+              <span class="badge"><span class="src-dot"></span>${escapeHtml(i.source)}</span>
+              <span class="time">${i.published ? escapeHtml(i.published) : ""}</span>
+            </div>
+          </div>
         </div>
       `).join("");
     }
 
-    async function fetchNews() {
+    function showError(msg) {
+      errEl.style.display = "block";
+      errEl.textContent = msg;
+    }
+
+    function clearError() {
+      errEl.style.display = "none";
+      errEl.textContent = "";
+    }
+
+    async function checkApi() {
       try {
-        updateURL();
+        const res = await fetch("/api/health", { cache: "no-store" });
+        if (!res.ok) throw new Error("health not ok");
+        apiDot.style.background = "var(--accent-2)";
+        apiDot.style.boxShadow = "0 0 0 4px rgba(34,197,94,.18)";
+        apiText.textContent = "API healthy";
+      } catch (e) {
+        apiDot.style.background = "var(--danger)";
+        apiDot.style.boxShadow = "0 0 0 4px rgba(239,68,68,.18)";
+        apiText.textContent = "API unreachable";
+      }
+    }
 
-        const p = new URLSearchParams();
-        if (qEl.value.trim()) p.set("q", qEl.value.trim());
-        if (srcEl.value.trim()) p.set("src", srcEl.value.trim());
+    async function fetchNews() {
+      updateURL();
+      clearError();
 
-        statusEl.textContent = "Fetching feeds...";
-        listEl.innerHTML = "";
+      const p = new URLSearchParams();
+      if (qEl.value.trim()) p.set("q", qEl.value.trim());
+      if (srcEl.value.trim()) p.set("src", srcEl.value.trim());
 
+      statusEl.textContent = "Fetching feeds…";
+      listEl.innerHTML = "";
+
+      try {
         const res = await fetch(`/api/news?${p.toString()}`, { cache: "no-store" });
 
         if (!res.ok) {
           const text = await res.text();
-          throw new Error(`API ${res.status}: ${text.slice(0, 300)}`);
+          throw new Error(`API ${res.status}: ${text.slice(0, 400)}`);
         }
 
         const data = await res.json();
         await loadSourcesIfNeeded(data.sources);
-
         statusEl.textContent = `Showing ${data.count} items • Updated: ${data.generated_at}`;
         render(data.items);
-
-      } catch (err) {
-        statusEl.textContent = `Error loading news: ${err?.message || err}`;
-        listEl.innerHTML = `
-          <p>
-            The API failed. This usually means the Vercel function crashed or dependencies weren't installed.
-            Try redeploying (without cache) and refresh.
-          </p>
-        `;
-        console.error(err);
+      } catch (e) {
+        statusEl.textContent = "Failed to load";
+        showError(String(e));
+        render([]);
       }
     }
 
@@ -134,13 +453,15 @@
       fetchNews();
     });
 
-    // initial
+    // Init
     setQueryFromURL();
+    checkApi();
     fetchNews();
 
-    // auto refresh every 2 minutes (only when tab is visible)
+    // Auto refresh every 2 minutes
     setInterval(() => {
-      if (document.visibilityState === "visible") fetchNews();
+      checkApi();
+      fetchNews();
     }, 120000);
   </script>
 </body>
