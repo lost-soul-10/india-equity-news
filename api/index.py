@@ -100,7 +100,7 @@ def passes_filter(text: str) -> bool:
 # ----------------------------
 # API
 # ----------------------------
-@app.get("/api/news")
+@app.get("/news")
 def api_news():
     q = (request.args.get("q") or "").strip().lower()
     src = (request.args.get("src") or "").strip()

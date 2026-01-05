@@ -6,21 +6,21 @@
   <title>Indian Equity Markets</title>
   <style>
     body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 24px; max-width: 1000px; }
-    .row { display:flex; gap:10px; margin: 12px 0; flex-wrap:wrap; align-items:center; }
-    input, select, button { padding:10px; font-size:14px; }
-    .meta { color:#555; font-size:13px; margin: 10px 0 18px; }
-    .item { padding:14px 0; border-bottom:1px solid #ddd; }
-    .src { font-size:12px; color:#666; margin-top:6px; }
-    .sum { font-size:13px; color:#222; margin-top:6px; }
-    a { color:#111; text-decoration:none; }
-    a:hover { text-decoration:underline; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 12px 0; }
+    input, select, button { padding: 10px; font-size: 14px; }
+    .meta { color: #555; font-size: 13px; margin: 10px 0 18px; }
+    .item { padding: 14px 0; border-bottom: 1px solid #ddd; }
+    .src { font-size: 12px; color: #666; margin-top: 6px; }
+    .sum { font-size: 13px; color: #222; margin-top: 6px; }
+    a { color: #111; text-decoration: none; }
+    a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
   <h2>Indian Equity Markets</h2>
 
   <div class="row">
-    <input id="q" placeholder="Keyword (e.g., dividend, bonus, rights issue, buyback, reliance)" size="55" />
+    <input id="q" placeholder="Keyword (e.g., dividend, bonus, rights, buyback, reliance)" size="55" />
     <select id="src">
       <option value="">All sources</option>
     </select>
@@ -38,15 +38,11 @@
     const statusEl = document.getElementById("status");
     const listEl = document.getElementById("list");
 
-    function esc(s) {
-      return (s || "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;");
+    function escapeHtml(s) {
+      return (s || "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
     }
 
-    function setFromURL() {
+    function setQueryFromURL() {
       const p = new URLSearchParams(location.search);
       qEl.value = p.get("q") || "";
       srcEl.value = p.get("src") || "";
@@ -59,10 +55,12 @@
       history.replaceState({}, "", `${location.pathname}?${p.toString()}`);
     }
 
-    function populateSources(sources) {
+    async function loadSourcesIfNeeded(sources) {
+      if (!sources || !sources.length) return;
+      // populate dropdown once, keep user's selection
       const current = srcEl.value;
       const existing = new Set([...srcEl.options].map(o => o.value));
-      (sources || []).forEach(s => {
+      sources.forEach(s => {
         if (!existing.has(s)) {
           const opt = document.createElement("option");
           opt.value = s;
@@ -78,21 +76,17 @@
         listEl.innerHTML = "<p>No items found. Try removing filters or refreshing.</p>";
         return;
       }
-
       listEl.innerHTML = items.map(i => `
         <div class="item">
-          <div>
-            <a href="${esc(i.link)}" target="_blank" rel="noopener noreferrer">${esc(i.title)}</a>
-          </div>
-          ${i.summary ? `<div class="sum">${esc(i.summary)}</div>` : ""}
-          <div class="src">${esc(i.source)}${i.published ? " • " + esc(i.published) : ""}</div>
+          <div><a href="${escapeHtml(i.link)}" target="_blank" rel="noopener noreferrer">${escapeHtml(i.title)}</a></div>
+          ${i.summary ? `<div class="sum">${escapeHtml(i.summary)}</div>` : ""}
+          <div class="src">${escapeHtml(i.source)}${i.published ? " • " + escapeHtml(i.published) : ""}</div>
         </div>
       `).join("");
     }
 
     async function fetchNews() {
       updateURL();
-
       const p = new URLSearchParams();
       if (qEl.value.trim()) p.set("q", qEl.value.trim());
       if (srcEl.value.trim()) p.set("src", srcEl.value.trim());
@@ -101,9 +95,16 @@
       listEl.innerHTML = "";
 
       const res = await fetch(`/api/news?${p.toString()}`, { cache: "no-store" });
-      const data = await res.json();
 
-      populateSources(data.sources);
+if (!res.ok) {
+  const text = await res.text();
+  throw new Error(`API ${res.status}: ${text.slice(0, 300)}`);
+}
+
+const data = await res.json();
+
+
+      await loadSourcesIfNeeded(data.sources);
       statusEl.textContent = `Showing ${data.count} items • Updated: ${data.generated_at}`;
       render(data.items);
     }
@@ -117,10 +118,11 @@
       fetchNews();
     });
 
-    setFromURL();
+    // initial
+    setQueryFromURL();
     fetchNews();
 
-    // Optional auto-refresh every 2 minutes
+    // optional: auto refresh every 2 minutes
     setInterval(fetchNews, 120000);
   </script>
 </body>
