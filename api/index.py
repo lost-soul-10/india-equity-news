@@ -75,7 +75,8 @@ def fmt_ts_ist(ts: int | None) -> str | None:
 NSE_FINANCIAL_RESULTS = "https://nsearchives.nseindia.com/content/RSS/Financial_Results.xml"
 NSE_ANNOUNCEMENTS = "https://nsearchives.nseindia.com/content/RSS/Online_announcements.xml"
 NSE_CORPORATE_ACTIONS = "https://nsearchives.nseindia.com/content/RSS/Corporate_action.xml"
-
+HINDUSTAN_TIMES_BUSINESS= "https://www.hindustantimes.com/feeds/rss/business/rssfeed.xml"
+NDTV_PROFIT= "https://feeds.feedburner.com/ndtvprofit-latest"
 LIVEMINT_MARKETS = "https://www.livemint.com/rss/markets"
 ECONOMIC_TIMES_MARKETS = "https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms"
 
@@ -96,6 +97,8 @@ GOOGLE_NEWS_RSS = google_news_rss(
 FEEDS = [
     ("NSE Financial Results", NSE_FINANCIAL_RESULTS),
     ("NSE Announcements", NSE_ANNOUNCEMENTS),
+    ("Hindustan Times Business", HINDUSTAN_TIMES_BUSINESS),
+    ("NDTV Business", NDTV_PROFIT),
     ("NSE Corporate Actions (Official)", NSE_CORPORATE_ACTIONS),
     ("LiveMint Markets", LIVEMINT_MARKETS),
     ("Economic Times Markets", ECONOMIC_TIMES_MARKETS),
@@ -121,7 +124,9 @@ INCLUDE_KEYWORDS = [
     "equities",
     "gold",
     "silver",
-    "commodities",
+    "commodities"
+    "budget"
+    "RBI",
 ]
 EXCLUDE_KEYWORDS = ["crypto", "bitcoin", "ethereum"]
 
