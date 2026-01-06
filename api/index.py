@@ -129,7 +129,9 @@ INCLUDE_KEYWORDS = [
     "RBI"
     "India"
     "management"
-    "quarterly",
+    "quarterly"
+    "bonds"
+    "bond",
 ]
 EXCLUDE_KEYWORDS = ["crypto", "bitcoin", "ethereum"]
 
