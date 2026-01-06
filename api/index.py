@@ -77,7 +77,6 @@ NSE_CORPORATE_ACTIONS = "https://nsearchives.nseindia.com/content/RSS/Corporate_
 HINDUSTAN_TIMES_BUSINESS= "https://www.hindustantimes.com/feeds/rss/business/rssfeed.xml"
 NDTV_PROFIT= "https://feeds.feedburner.com/ndtvprofit-latest"
 NSE_BOARD_MEETINGS= "https://nsearchives.nseindia.com/content/RSS/Board_Meetings.xml"
-BUSINESS_STANDARD= "https://www.business-standard.com/rss-feeds/listing"
 LIVEMINT_MARKETS = "https://www.livemint.com/rss/markets"
 ECONOMIC_TIMES_MARKETS = "https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms"
 
@@ -101,7 +100,6 @@ FEEDS = [
     ("NDTV Business", NDTV_PROFIT),
     ("NSE Board Meetings", NSE_BOARD_MEETINGS),
     ("NSE Corporate Actions (Official)", NSE_CORPORATE_ACTIONS),
-    ("Business Standard", BUSINESS_STANDARD,),
     ("LiveMint Markets", LIVEMINT_MARKETS),
     ("Economic Times Markets", ECONOMIC_TIMES_MARKETS),
     ("Google News (India equities)", GOOGLE_NEWS_RSS),
