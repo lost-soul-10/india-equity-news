@@ -100,7 +100,7 @@ FEEDS = [
     ("NSE Announcements", NSE_ANNOUNCEMENTS),
     ("Hindustan Times Business", HINDUSTAN_TIMES_BUSINESS),
     ("NDTV Business", NDTV_PROFIT),
-    ("Business Standard Quaterly Results", BUSINESS_STANDARD_QUARTERLY_RESULTS),
+    ("Business Standard Quarterly Results", BUSINESS_STANDARD_QUARTERLY_RESULTS),
     ("NSE Board Meetings", NSE_BOARD_MEETINGS),
     ("NSE Corporate Actions (Official)", NSE_CORPORATE_ACTIONS),
     ("Business Standard Markets)", BUSINESS_STANDARD_MARKET),
