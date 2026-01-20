@@ -131,7 +131,8 @@ INCLUDE_KEYWORDS = [
     "management"
     "quarterly"
     "bonds"
-    "bond",
+    "bond"
+    "sovereign",
 ]
 EXCLUDE_KEYWORDS = ["crypto", "bitcoin", "ethereum"]
 
@@ -243,7 +244,7 @@ def api_news():
     )
 
     # CDN/browser caching for 60s to reduce repeated RSS calls
-    resp.headers["Cache-Control"] = "s-maxage=60, max-age=60"
+    resp.headers["Cache-Control"] = "s-maxage=900, max-age=900"
     return resp
 
 
