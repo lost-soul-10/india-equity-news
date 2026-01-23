@@ -1,4 +1,4 @@
-<!-- index.html (updated: better states, sort, group dupes, saved filters, tags) -->
+<!-- index.html (FULL UPDATED FRONTEND) -->
 <!doctype html>
 <html lang="en">
 <head>
@@ -39,11 +39,7 @@
     a { color: inherit; text-decoration: none; }
     a:hover { text-decoration: underline; }
 
-    .wrap {
-      max-width: 980px;
-      margin: 0 auto;
-      padding: 36px 18px 60px;
-    }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 36px 18px 60px; }
 
     header {
       display: flex;
@@ -150,10 +146,7 @@
       transition: background .15s ease, border-color .15s ease, transform .05s ease;
       white-space: nowrap;
     }
-    button:hover {
-      background: rgba(255,255,255,0.06);
-      border-color: rgba(255,255,255,0.16);
-    }
+    button:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.16); }
     button:active { transform: translateY(1px); }
 
     .btn-primary {
@@ -200,7 +193,6 @@
       background: rgba(255,255,255,0.03);
       color: var(--muted);
     }
-
     .pill strong { color: rgba(255,255,255,0.88); font-weight: 650; }
 
     .pins {
@@ -277,17 +269,9 @@
       background: rgba(255,255,255,0.28);
     }
 
-    .time {
-      color: rgba(255,255,255,0.42);
-      font-size: 11.5px;
-    }
+    .time { color: rgba(255,255,255,0.42); font-size: 11.5px; }
 
-    .tags {
-      display: inline-flex;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-
+    .tags { display: inline-flex; gap: 6px; flex-wrap: wrap; }
     .tag {
       padding: 6px 8px;
       border-radius: 999px;
@@ -299,16 +283,9 @@
       white-space: nowrap;
     }
 
-    .dupes {
-      color: rgba(255,255,255,0.55);
-      font-size: 12px;
-    }
+    .dupes { color: rgba(255,255,255,0.55); font-size: 12px; }
 
-    .empty {
-      padding: 18px 16px;
-      color: var(--muted);
-      font-size: 13px;
-    }
+    .empty { padding: 18px 16px; color: var(--muted); font-size: 13px; }
 
     .error {
       margin-top: 14px;
@@ -323,11 +300,7 @@
       display: none;
     }
 
-    footer {
-      margin-top: 16px;
-      color: rgba(255,255,255,0.45);
-      font-size: 11.5px;
-    }
+    footer { margin-top: 16px; color: rgba(255,255,255,0.45); font-size: 11.5px; }
   </style>
 </head>
 
@@ -583,7 +556,6 @@
 
       pinsEl.innerHTML = pinButtons + pinCurrent + clearPins;
 
-      // handlers
       [...pinsEl.querySelectorAll("button[data-pin]")].forEach(btn => {
         btn.addEventListener("click", () => {
           const i = Number(btn.getAttribute("data-pin"));
@@ -606,7 +578,6 @@
         }
 
         const pinsNow = loadPins();
-        // de-dupe pins by keyword
         const exists = pinsNow.some(x => (x.q || "").toLowerCase() === q.toLowerCase());
         if (exists) return;
 
@@ -632,10 +603,10 @@
       updateURL();
       clearError();
 
-      // If user chooses relevance but has no keyword, warn and fall back to latest.
+      // “Most relevant” needs a keyword. We enforce this so it’s not misleading.
       if (sortEl.value === "relevance" && !qEl.value.trim()) {
+        showError("“Most relevant” needs a keyword.\n\nHow to use it:\n1) Type a keyword (e.g., “IPO”, “buyback”, “Reliance”)\n2) Select Sort: Most relevant\n3) Click Apply\n\nWithout a keyword, relevance has nothing to rank against.");
         sortEl.value = "latest";
-        showError("“Most relevant” needs a keyword.\n\nTip: enter a keyword (e.g., “IPO” or “buyback”) then switch back to Most relevant.");
       }
 
       const p = new URLSearchParams();
@@ -662,7 +633,6 @@
         const data = await res.json();
         await loadSourcesIfNeeded(data.sources);
 
-        // Partial feed failures
         if (data.feed_failures && data.feed_failures.length) {
           showError(formatFriendlyError("feeds_partial", data.feed_failures.join(", ")));
         }
@@ -674,7 +644,6 @@
 
         updateLastOkUI();
         setStatus(`${data.count} items`, data.generated_at);
-
         render(data.items);
 
         isFirstLoad = false;
@@ -682,7 +651,6 @@
         isFirstLoad = false;
         updateLastOkUI();
 
-        // Keep last items visible
         if (lastRenderedItems.length > 0) {
           setStatus("Refresh failed (showing last results)", lastGoodGeneratedAt || undefined);
           showError(formatFriendlyError("api_down", e));
@@ -709,7 +677,7 @@
       if (e.key === "Enter") fetchNews();
     });
 
-    // Immediate apply on toggles (optional)
+    // Optional: apply on changes
     sortEl.addEventListener("change", () => fetchNews());
     groupEl.addEventListener("change", () => fetchNews());
 

@@ -1,4 +1,4 @@
-# app.py (updated)
+# app.py (FULL UPDATED BACKEND)
 from __future__ import annotations
 
 import calendar
@@ -140,12 +140,15 @@ TAG_RULES: dict[str, list[str]] = {
     "Macro": ["inflation", "cpi", "gdp", "pmi", "rates", "repo", "crr", "fiscal", "budget", "yield"],
 }
 
+# NSE feeds can be temperamental; these headers reduce blocks/timeouts.
 REQUEST_HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Macintosh; Intel Mac OS X) AppleWebKit/537.36 "
         "(KHTML, like Gecko) Chrome Safari"
     ),
     "Accept": "application/rss+xml, application/xml;q=0.9, */*;q=0.8",
+    "Accept-Language": "en-IN,en;q=0.9",
+    "Referer": "https://www.nseindia.com/",
 }
 
 
@@ -166,12 +169,20 @@ def tag_item(title: str, summary: str) -> list[str]:
 
 
 def fetch_feed(url: str) -> feedparser.FeedParserDict | None:
+    """
+    IMPORTANT FIX:
+    feedparser bozo=1 can still have usable entries.
+    Only treat as failure when entries are empty.
+    """
     try:
         r = requests.get(url, headers=REQUEST_HEADERS, timeout=15)
         r.raise_for_status()
+
         feed = feedparser.parse(r.content)
-        if getattr(feed, "bozo", 0):
+
+        if getattr(feed, "bozo", 0) and not getattr(feed, "entries", None):
             return None
+
         return feed
     except Exception:
         return None
@@ -225,14 +236,16 @@ def api_news():
                 if q not in hay:
                     continue
 
-            pub_ts = to_ts_utc(e.get("published_parsed")) or to_ts_utc(e.get("updated_parsed"))
+            pub_ts = to_ts_utc(e.get("published_parsed")) or to_ts_utc(e.get("updated_parsed")) or 0
             published = fmt_ts_ist(pub_ts)
 
             # Relevance scoring (simple, explainable)
             base_text = f"{title} {summary}"
             score = 0
             if q:
-                score += 10 * count_occurrences(base_text, q)
+                score += 10 * count_occurrences(base_text, q)          # strong boost for your keyword
+                if q in title.lower():
+                    score += 25                                       # title match is extra important
             # small boost for “signal” keywords regardless
             score += sum(1 for k in INCLUDE_KEYWORDS if k in base_text.lower())
 
@@ -245,7 +258,7 @@ def api_news():
                     "source": source_name,
                     "summary": summary,
                     "published": published,
-                    "published_ts": pub_ts or 0,
+                    "published_ts": pub_ts,
                     "score": score,
                     "tags": tags,
                     "norm_title": normalize_title(title),
@@ -266,7 +279,6 @@ def api_news():
             best = grouped[key]
             # keep newest item as the primary
             if (it["published_ts"] or 0) > (best["published_ts"] or 0):
-                # carry over dupe info
                 it["dupe_sources"] = best.get("dupe_sources", []) + [it["source"]]
                 it["dupe_count"] = best.get("dupe_count", 0) + 1
                 grouped[key] = it
@@ -278,12 +290,12 @@ def api_news():
 
     # Sorting
     if sort_mode == "relevance":
-        # If no query, relevance is less meaningful; still works due to keyword boosts.
+        # Relevance still works without q, but it's meant to be used with q.
         items.sort(key=lambda x: (x.get("score", 0), x.get("published_ts", 0)), reverse=True)
     else:
         items.sort(key=lambda x: x.get("published_ts", 0), reverse=True)
 
-    # Trim + drop internal fields
+    # Output items: remove internal fields
     out_items = []
     for it in items[:150]:
         out_items.append(
