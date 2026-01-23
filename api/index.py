@@ -6,7 +6,6 @@ import re
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from urllib.parse import quote_plus
 from zoneinfo import ZoneInfo
 
 import feedparser
@@ -37,6 +36,7 @@ def home():
 def favicon():
     # Optional: silence favicon 404 noise
     return ("", 204)
+
 
 # ----------------------------
 # Helpers
@@ -69,30 +69,18 @@ def fmt_ts_ist(ts: int | None) -> str | None:
         .strftime("%d %b %Y, %I:%M %p IST")
     )
 
+
 # ----------------------------
 # Feeds
 # ----------------------------
 NSE_ANNOUNCEMENTS = "https://nsearchives.nseindia.com/content/RSS/Online_announcements.xml"
 NSE_CORPORATE_ACTIONS = "https://nsearchives.nseindia.com/content/RSS/Corporate_action.xml"
-HINDUSTAN_TIMES_BUSINESS= "https://www.hindustantimes.com/feeds/rss/business/rssfeed.xml"
-NDTV_PROFIT= "https://feeds.feedburner.com/ndtvprofit-latest"
-NSE_BOARD_MEETINGS= "https://nsearchives.nseindia.com/content/RSS/Board_Meetings.xml"
+NSE_BOARD_MEETINGS = "https://nsearchives.nseindia.com/content/RSS/Board_Meetings.xml"
+
+HINDUSTAN_TIMES_BUSINESS = "https://www.hindustantimes.com/feeds/rss/business/rssfeed.xml"
+NDTV_PROFIT = "https://feeds.feedburner.com/ndtvprofit-latest"
 LIVEMINT_MARKETS = "https://www.livemint.com/rss/markets"
 ECONOMIC_TIMES_MARKETS = "https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms"
-
-
-def google_news_rss(query: str, hl: str = "en-IN", gl: str = "IN", ceid: str = "IN:en") -> str:
-    return (
-        "https://news.google.com/rss/search?q="
-        + quote_plus(query)
-        + f"&hl={hl}&gl={gl}&ceid={quote_plus(ceid)}"
-    )
-
-
-GOOGLE_NEWS_RSS = google_news_rss(
-    '(NSE OR BSE OR "bonus issue" OR dividend OR buyback OR "stock split" OR rights issue) '
-    "-crypto -bitcoin -ethereum when:2d"
-)
 
 FEEDS = [
     ("NSE Announcements", NSE_ANNOUNCEMENTS),
@@ -102,7 +90,6 @@ FEEDS = [
     ("NSE Corporate Actions (Official)", NSE_CORPORATE_ACTIONS),
     ("LiveMint Markets", LIVEMINT_MARKETS),
     ("Economic Times Markets", ECONOMIC_TIMES_MARKETS),
-    ("Google News (India equities)", GOOGLE_NEWS_RSS),
 ]
 
 INCLUDE_KEYWORDS = [
@@ -124,16 +111,17 @@ INCLUDE_KEYWORDS = [
     "equities",
     "gold",
     "silver",
-    "commodities"
-    "budget"
-    "RBI"
-    "India"
-    "management"
-    "quarterly"
-    "bonds"
-    "bond"
+    "commodities",
+    "budget",
+    "rbi",
+    "india",
+    "management",
+    "quarterly",
+    "bonds",
+    "bond",
     "sovereign",
 ]
+
 EXCLUDE_KEYWORDS = ["crypto", "bitcoin", "ethereum"]
 
 REQUEST_HEADERS = {
@@ -166,6 +154,7 @@ def fetch_feed(url: str) -> feedparser.FeedParserDict | None:
         return feed
     except Exception:
         return None
+
 
 # ----------------------------
 # API
@@ -243,7 +232,7 @@ def api_news():
         )
     )
 
-    # CDN/browser caching for 60s to reduce repeated RSS calls
+    # CDN/browser caching for 15 min to reduce repeated RSS calls
     resp.headers["Cache-Control"] = "s-maxage=900, max-age=900"
     return resp
 

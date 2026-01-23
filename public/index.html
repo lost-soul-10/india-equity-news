@@ -108,6 +108,12 @@
       padding: 14px;
       box-shadow: var(--shadow-soft);
       margin-top: 10px;
+
+      /* UX upgrade: keep filters visible while scrolling */
+      position: sticky;
+      top: 12px;
+      z-index: 10;
+      backdrop-filter: blur(10px);
     }
 
     .row {
@@ -185,6 +191,11 @@
       color: var(--muted);
     }
 
+    .pill strong {
+      color: rgba(255,255,255,0.88);
+      font-weight: 650;
+    }
+
     /* Feed list */
     .list {
       margin-top: 18px;
@@ -240,9 +251,10 @@
       background: rgba(255,255,255,0.28);
     }
 
+    /* UX upgrade: time slightly quieter than source */
     .time {
-      color: rgba(255,255,255,0.50);
-      font-size: 12px;
+      color: rgba(255,255,255,0.42);
+      font-size: 11.5px;
     }
 
     .empty {
@@ -312,7 +324,7 @@
     </div>
 
     <footer>
-      Data comes from public RSS feeds. Headlines may lag slightly depending on source updates.
+      Data comes from public RSS feeds. Headlines may lag slightly depending on source updates. Not investment advice.
     </footer>
   </div>
 
@@ -324,6 +336,11 @@
     const errEl = document.getElementById("err");
     const apiDot = document.getElementById("apiDot");
     const apiText = document.getElementById("apiText");
+
+    // UX upgrade: keep old items on screen while refreshing (no "blink")
+    let lastRenderedItems = [];
+    let lastGoodGeneratedAt = null;
+    let isFirstLoad = true;
 
     function escapeHtml(s) {
       return (s || "")
@@ -373,6 +390,8 @@
     }
 
     function render(items) {
+      lastRenderedItems = items || [];
+
       if (!items || items.length === 0) {
         listEl.innerHTML = `<div class="empty">No items found. Try clearing filters or waiting for refresh.</div>`;
         return;
@@ -406,7 +425,15 @@
       }
     }
 
-    async function fetchNews() {
+    function setStatus(text, generatedAt) {
+      if (generatedAt) {
+        statusEl.innerHTML = `<strong>${escapeHtml(text)}</strong> • Updated: ${escapeHtml(generatedAt)}`;
+      } else {
+        statusEl.innerHTML = `<strong>${escapeHtml(text)}</strong>`;
+      }
+    }
+
+    async function fetchNews({ silent = false } = {}) {
       updateURL();
       clearError();
 
@@ -414,8 +441,13 @@
       if (qEl.value.trim()) p.set("q", qEl.value.trim());
       if (srcEl.value.trim()) p.set("src", srcEl.value.trim());
 
-      statusEl.textContent = "Fetching…";
-      listEl.innerHTML = `<div class="empty">Fetching latest headlines…</div>`;
+      // First load: show loading. Later refresh: keep content on screen.
+      if (isFirstLoad) {
+        setStatus("Loading…");
+        listEl.innerHTML = `<div class="empty">Fetching latest headlines…</div>`;
+      } else if (!silent) {
+        setStatus("Refreshing…", lastGoodGeneratedAt || undefined);
+      }
 
       try {
         const res = await fetch(`/api/news?${p.toString()}`, { cache: "no-store" });
@@ -427,12 +459,27 @@
 
         const data = await res.json();
         await loadSourcesIfNeeded(data.sources);
-        statusEl.textContent = `${data.count} items • Updated: ${data.generated_at}`;
+
+        lastGoodGeneratedAt = data.generated_at || null;
+
+        setStatus(`${data.count} items`, data.generated_at);
+
         render(data.items);
+
+        isFirstLoad = false;
       } catch (e) {
-        statusEl.textContent = "Failed to load";
-        showError(String(e));
-        render([]);
+        // Keep last items visible if we have them (trust-preserving)
+        isFirstLoad = false;
+
+        if (lastRenderedItems.length > 0) {
+          setStatus("Refresh failed (showing last results)", lastGoodGeneratedAt || undefined);
+          showError(String(e));
+          // do not wipe list
+        } else {
+          setStatus("Failed to load");
+          showError(String(e));
+          render([]);
+        }
       }
     }
 
@@ -446,16 +493,21 @@
       fetchNews();
     });
 
+    // Enter key applies filters
+    qEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") fetchNews();
+    });
+
     // init
     setQueryFromURL();
     checkApi();
     fetchNews();
 
-    // auto refresh every 15 minutes
+    // auto refresh every 15 minutes (matches the UI copy)
     setInterval(() => {
       checkApi();
-      fetchNews();
-    }, 120000);
+      fetchNews({ silent: true });
+    }, 900000);
   </script>
 </body>
 </html>
