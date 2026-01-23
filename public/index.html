@@ -1,3 +1,4 @@
+<!-- index.html (updated: better states, sort, group dupes, saved filters, tags) -->
 <!doctype html>
 <html lang="en">
 <head>
@@ -5,7 +6,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Indian Equity Markets</title>
 
-  <!-- Classy, modern font -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -14,19 +14,14 @@
     :root{
       --bg: #0c0f14;
       --panel: rgba(255,255,255,0.04);
-      --panel-2: rgba(255,255,255,0.06);
       --text: rgba(255,255,255,0.92);
       --muted: rgba(255,255,255,0.66);
-      --faint: rgba(255,255,255,0.50);
       --border: rgba(255,255,255,0.10);
 
-      /* single tasteful accent */
-      --accent: #a78bfa; /* soft violet */
+      --accent: #a78bfa;
       --accent-2: rgba(167,139,250,0.18);
 
       --radius: 16px;
-      --radius-sm: 12px;
-      --shadow: 0 18px 45px rgba(0,0,0,0.35);
       --shadow-soft: 0 10px 25px rgba(0,0,0,0.25);
     }
 
@@ -58,11 +53,7 @@
       margin-bottom: 18px;
     }
 
-    .brand {
-      display: grid;
-      gap: 8px;
-    }
-
+    .brand { display: grid; gap: 8px; }
     .brand h1 {
       margin: 0;
       font-size: 22px;
@@ -70,7 +61,6 @@
       letter-spacing: -0.02em;
       font-weight: 700;
     }
-
     .brand p {
       margin: 0;
       color: var(--muted);
@@ -100,7 +90,6 @@
       box-shadow: 0 0 0 6px var(--accent-2);
     }
 
-    /* Minimal toolbar */
     .toolbar {
       border: 1px solid var(--border);
       background: var(--panel);
@@ -109,7 +98,6 @@
       box-shadow: var(--shadow-soft);
       margin-top: 10px;
 
-      /* UX upgrade: keep filters visible while scrolling */
       position: sticky;
       top: 12px;
       z-index: 10;
@@ -118,14 +106,23 @@
 
     .row {
       display: grid;
-      grid-template-columns: 1fr 220px auto auto;
+      grid-template-columns: 1fr 220px 170px auto;
       gap: 10px;
       align-items: center;
     }
 
+    .row2 {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      margin-top: 10px;
+    }
+
     @media (max-width: 860px) {
-      .row { grid-template-columns: 1fr; }
+      .row, .row2 { grid-template-columns: 1fr; }
       .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+      .pins { justify-content: flex-start; flex-wrap: wrap; }
     }
 
     input, select {
@@ -153,7 +150,6 @@
       transition: background .15s ease, border-color .15s ease, transform .05s ease;
       white-space: nowrap;
     }
-
     button:hover {
       background: rgba(255,255,255,0.06);
       border-color: rgba(255,255,255,0.16);
@@ -168,6 +164,20 @@
       background: rgba(167,139,250,0.20);
       border-color: rgba(167,139,250,0.45);
     }
+
+    .toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.03);
+      color: var(--muted);
+      font-size: 12px;
+      user-select: none;
+    }
+    .toggle input { width: 16px; height: 16px; }
 
     .meta {
       display: flex;
@@ -191,12 +201,21 @@
       color: var(--muted);
     }
 
-    .pill strong {
-      color: rgba(255,255,255,0.88);
-      font-weight: 650;
+    .pill strong { color: rgba(255,255,255,0.88); font-weight: 650; }
+
+    .pins {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
     }
 
-    /* Feed list */
+    .pinbtn {
+      padding: 8px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+    }
+
     .list {
       margin-top: 18px;
       border: 1px solid var(--border);
@@ -235,6 +254,13 @@
       margin-top: 2px;
     }
 
+    .leftmeta {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
     .source {
       display: inline-flex;
       align-items: center;
@@ -251,10 +277,31 @@
       background: rgba(255,255,255,0.28);
     }
 
-    /* UX upgrade: time slightly quieter than source */
     .time {
       color: rgba(255,255,255,0.42);
       font-size: 11.5px;
+    }
+
+    .tags {
+      display: inline-flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .tag {
+      padding: 6px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(167,139,250,0.25);
+      background: rgba(167,139,250,0.10);
+      color: rgba(255,255,255,0.82);
+      font-size: 11.5px;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .dupes {
+      color: rgba(255,255,255,0.55);
+      font-size: 12px;
     }
 
     .empty {
@@ -301,8 +348,14 @@
     <div class="toolbar">
       <div class="row">
         <input id="q" placeholder="Keyword (e.g., dividend, buyback, split, results, Reliance)" />
+
         <select id="src">
           <option value="">All sources</option>
+        </select>
+
+        <select id="sort">
+          <option value="latest">Sort: Latest</option>
+          <option value="relevance">Sort: Most relevant</option>
         </select>
 
         <div class="actions" style="display:flex; gap:10px;">
@@ -311,9 +364,19 @@
         </div>
       </div>
 
+      <div class="row2">
+        <label class="toggle" title="Group duplicate headlines across sources">
+          <input type="checkbox" id="group" />
+          Group duplicates
+        </label>
+
+        <div class="pins" id="pins"></div>
+      </div>
+
       <div class="meta">
         <span class="pill" id="status">Loading…</span>
-        <span class="pill">Tip: try “dividend”, “rights issue”, “earnings”, “IPO”</span>
+        <span class="pill" id="lastOk">Last successful: —</span>
+        <span class="pill">Tip: try “dividend”, “rights issue”, “earnings”, “IPO”, “block deal”</span>
       </div>
     </div>
 
@@ -331,16 +394,22 @@
   <script>
     const qEl = document.getElementById("q");
     const srcEl = document.getElementById("src");
+    const sortEl = document.getElementById("sort");
+    const groupEl = document.getElementById("group");
+
     const statusEl = document.getElementById("status");
+    const lastOkEl = document.getElementById("lastOk");
     const listEl = document.getElementById("list");
     const errEl = document.getElementById("err");
     const apiDot = document.getElementById("apiDot");
     const apiText = document.getElementById("apiText");
+    const pinsEl = document.getElementById("pins");
 
-    // UX upgrade: keep old items on screen while refreshing (no "blink")
     let lastRenderedItems = [];
-    let lastGoodGeneratedAt = null;
+    let lastGoodGeneratedAt = localStorage.getItem("iem:last_ok") || null;
     let isFirstLoad = true;
+
+    const PIN_KEY = "iem:pins";
 
     function escapeHtml(s) {
       return (s || "")
@@ -354,12 +423,16 @@
       const p = new URLSearchParams(location.search);
       qEl.value = p.get("q") || "";
       srcEl.value = p.get("src") || "";
+      sortEl.value = p.get("sort") || "latest";
+      groupEl.checked = (p.get("group") || "") === "1";
     }
 
     function updateURL() {
       const p = new URLSearchParams();
       if (qEl.value.trim()) p.set("q", qEl.value.trim());
       if (srcEl.value.trim()) p.set("src", srcEl.value.trim());
+      if (sortEl.value) p.set("sort", sortEl.value);
+      if (groupEl.checked) p.set("group", "1");
       const qs = p.toString();
       history.replaceState({}, "", qs ? `${location.pathname}?${qs}` : `${location.pathname}`);
     }
@@ -389,6 +462,49 @@
       errEl.textContent = "";
     }
 
+    function setStatus(text, generatedAt) {
+      if (generatedAt) {
+        statusEl.innerHTML = `<strong>${escapeHtml(text)}</strong> • Updated: ${escapeHtml(generatedAt)}`;
+      } else {
+        statusEl.innerHTML = `<strong>${escapeHtml(text)}</strong>`;
+      }
+    }
+
+    function updateLastOkUI() {
+      lastOkEl.textContent = `Last successful: ${lastGoodGeneratedAt || "—"}`;
+    }
+
+    function formatFriendlyError(kind, detail) {
+      if (kind === "api_down") {
+        return [
+          "Could not reach the news service.",
+          "",
+          "What you can do:",
+          "• Check your internet connection",
+          "• Refresh the page in a few seconds",
+          "• If this keeps happening, the backend may be down (Vercel cold start or outage).",
+          "",
+          "Technical detail:",
+          String(detail || "")
+        ].join("\n");
+      }
+
+      if (kind === "feeds_partial") {
+        return [
+          "Some sources did not respond in time, so results may be incomplete.",
+          "",
+          "What you can do:",
+          "• Wait 1–2 minutes and try refresh",
+          "• Switch Source to “NSE …” for official items",
+          "",
+          "Sources that failed:",
+          String(detail || "")
+        ].join("\n");
+      }
+
+      return String(detail || "Unknown error");
+    }
+
     function render(items) {
       lastRenderedItems = items || [];
 
@@ -397,18 +513,29 @@
         return;
       }
 
-      listEl.innerHTML = items.map(i => `
-        <div class="item">
-          <a class="titlelink" href="${escapeHtml(i.link)}" target="_blank" rel="noopener noreferrer">
-            ${escapeHtml(i.title)}
-          </a>
-          ${i.summary ? `<div class="summary">${escapeHtml(i.summary)}</div>` : ""}
-          <div class="subrow">
-            <div class="source">${escapeHtml(i.source)}</div>
-            <div class="time">${i.published ? escapeHtml(i.published) : ""}</div>
+      listEl.innerHTML = items.map(i => {
+        const tags = (i.tags || []).map(t => `<span class="tag">${escapeHtml(t)}</span>`).join("");
+        const dupes = (i.dupe_count && i.dupe_count > 0)
+          ? `<div class="dupes">Also seen in: ${escapeHtml((i.dupe_sources || []).join(", "))}</div>`
+          : "";
+
+        return `
+          <div class="item">
+            <a class="titlelink" href="${escapeHtml(i.link)}" target="_blank" rel="noopener noreferrer">
+              ${escapeHtml(i.title)}
+            </a>
+            ${i.summary ? `<div class="summary">${escapeHtml(i.summary)}</div>` : ""}
+            ${tags ? `<div class="tags">${tags}</div>` : ""}
+            ${dupes}
+            <div class="subrow">
+              <div class="leftmeta">
+                <div class="source">${escapeHtml(i.source)}</div>
+              </div>
+              <div class="time">${i.published ? escapeHtml(i.published) : ""}</div>
+            </div>
           </div>
-        </div>
-      `).join("");
+        `;
+      }).join("");
     }
 
     async function checkApi() {
@@ -425,23 +552,98 @@
       }
     }
 
-    function setStatus(text, generatedAt) {
-      if (generatedAt) {
-        statusEl.innerHTML = `<strong>${escapeHtml(text)}</strong> • Updated: ${escapeHtml(generatedAt)}`;
-      } else {
-        statusEl.innerHTML = `<strong>${escapeHtml(text)}</strong>`;
+    // -------------------------
+    // Pins (saved filters)
+    // -------------------------
+    function loadPins() {
+      try {
+        return JSON.parse(localStorage.getItem(PIN_KEY) || "[]");
+      } catch {
+        return [];
       }
     }
 
+    function savePins(pins) {
+      localStorage.setItem(PIN_KEY, JSON.stringify(pins.slice(0, 3)));
+      renderPins();
+    }
+
+    function renderPins() {
+      const pins = loadPins();
+
+      const pinButtons = pins.map((p, idx) => `
+        <button class="pinbtn" data-pin="${idx}" title="Apply saved filter">${escapeHtml(p.label)}</button>
+      `).join("");
+
+      const pinCurrent = `
+        <button class="pinbtn" id="pinCurrent" title="Save this keyword (max 3)">Pin</button>
+      `;
+
+      const clearPins = pins.length ? `<button class="pinbtn" id="clearPins" title="Remove all saved filters">Clear</button>` : "";
+
+      pinsEl.innerHTML = pinButtons + pinCurrent + clearPins;
+
+      // handlers
+      [...pinsEl.querySelectorAll("button[data-pin]")].forEach(btn => {
+        btn.addEventListener("click", () => {
+          const i = Number(btn.getAttribute("data-pin"));
+          const p = loadPins()[i];
+          if (!p) return;
+          qEl.value = p.q || "";
+          srcEl.value = p.src || "";
+          sortEl.value = p.sort || "latest";
+          groupEl.checked = !!p.group;
+          fetchNews();
+        });
+      });
+
+      const pinBtn = document.getElementById("pinCurrent");
+      pinBtn.addEventListener("click", () => {
+        const q = qEl.value.trim();
+        if (!q) {
+          showError("Pin needs a keyword.\n\nTip: type something like “IPO”, “buyback”, or “block deal”, then Pin.");
+          return;
+        }
+
+        const pinsNow = loadPins();
+        // de-dupe pins by keyword
+        const exists = pinsNow.some(x => (x.q || "").toLowerCase() === q.toLowerCase());
+        if (exists) return;
+
+        const label = q.length > 18 ? q.slice(0, 18) + "…" : q;
+        pinsNow.unshift({ label, q, src: srcEl.value, sort: sortEl.value, group: groupEl.checked });
+
+        savePins(pinsNow.slice(0, 3));
+      });
+
+      const clearBtn = document.getElementById("clearPins");
+      if (clearBtn) {
+        clearBtn.addEventListener("click", () => {
+          localStorage.removeItem(PIN_KEY);
+          renderPins();
+        });
+      }
+    }
+
+    // -------------------------
+    // Fetch
+    // -------------------------
     async function fetchNews({ silent = false } = {}) {
       updateURL();
       clearError();
 
+      // If user chooses relevance but has no keyword, warn and fall back to latest.
+      if (sortEl.value === "relevance" && !qEl.value.trim()) {
+        sortEl.value = "latest";
+        showError("“Most relevant” needs a keyword.\n\nTip: enter a keyword (e.g., “IPO” or “buyback”) then switch back to Most relevant.");
+      }
+
       const p = new URLSearchParams();
       if (qEl.value.trim()) p.set("q", qEl.value.trim());
       if (srcEl.value.trim()) p.set("src", srcEl.value.trim());
+      p.set("sort", sortEl.value);
+      if (groupEl.checked) p.set("group", "1");
 
-      // First load: show loading. Later refresh: keep content on screen.
       if (isFirstLoad) {
         setStatus("Loading…");
         listEl.innerHTML = `<div class="empty">Fetching latest headlines…</div>`;
@@ -460,50 +662,65 @@
         const data = await res.json();
         await loadSourcesIfNeeded(data.sources);
 
-        lastGoodGeneratedAt = data.generated_at || null;
+        // Partial feed failures
+        if (data.feed_failures && data.feed_failures.length) {
+          showError(formatFriendlyError("feeds_partial", data.feed_failures.join(", ")));
+        }
 
+        lastGoodGeneratedAt = data.generated_at || lastGoodGeneratedAt;
+        if (data.generated_at) {
+          localStorage.setItem("iem:last_ok", data.generated_at);
+        }
+
+        updateLastOkUI();
         setStatus(`${data.count} items`, data.generated_at);
 
         render(data.items);
 
         isFirstLoad = false;
       } catch (e) {
-        // Keep last items visible if we have them (trust-preserving)
         isFirstLoad = false;
+        updateLastOkUI();
 
+        // Keep last items visible
         if (lastRenderedItems.length > 0) {
           setStatus("Refresh failed (showing last results)", lastGoodGeneratedAt || undefined);
-          showError(String(e));
-          // do not wipe list
+          showError(formatFriendlyError("api_down", e));
         } else {
           setStatus("Failed to load");
-          showError(String(e));
+          showError(formatFriendlyError("api_down", e));
           render([]);
         }
       }
     }
 
-    document.getElementById("apply").addEventListener("click", () => {
-      fetchNews();
-    });
-
+    // Buttons
+    document.getElementById("apply").addEventListener("click", () => fetchNews());
     document.getElementById("reset").addEventListener("click", () => {
       qEl.value = "";
       srcEl.value = "";
+      sortEl.value = "latest";
+      groupEl.checked = false;
       fetchNews();
     });
 
-    // Enter key applies filters
+    // Enter key applies
     qEl.addEventListener("keydown", (e) => {
       if (e.key === "Enter") fetchNews();
     });
 
+    // Immediate apply on toggles (optional)
+    sortEl.addEventListener("change", () => fetchNews());
+    groupEl.addEventListener("change", () => fetchNews());
+
     // init
     setQueryFromURL();
+    renderPins();
+    updateLastOkUI();
     checkApi();
     fetchNews();
 
-    // auto refresh every 15 minutes (matches the UI copy)
+    // auto refresh every 15 minutes
     setInterval(() => {
       checkApi();
       fetchNews({ silent: true });
