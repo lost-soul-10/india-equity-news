@@ -108,8 +108,8 @@ FEEDS_IN = [
     ("Economic Times Markets", ECONOMIC_TIMES_MARKETS),
 ]
 
-# US feeds (small set; easy to expand later)
-REUTERS_MARKETS = "https://www.reutersagency.com/feed/?best-topics=markets&post_type=best"
+# US feeds
+REUTERS_MARKETS = "https://news.google.com/rss/search?q=site%3Areuters.com&hl=en-US&gl=US&ceid=US%3Aen"
 
 
 FEEDS_US = [
