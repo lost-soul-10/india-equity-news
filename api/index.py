@@ -93,9 +93,6 @@ NDTV_PROFIT = "https://feeds.feedburner.com/ndtvprofit-latest"
 LIVEMINT_MARKETS = "https://www.livemint.com/rss/markets"
 ECONOMIC_TIMES_MARKETS = "https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms"
 
-# US/global feeds
-REUTERS_MARKETS = "https://news.google.com/rss/search?q=site%3Areuters.com&hl=en-US&gl=US&ceid=US%3Aen"
-
 
 FEEDS = [
     ("NSE Announcements", NSE_ANNOUNCEMENTS),
@@ -105,7 +102,6 @@ FEEDS = [
     ("NSE Corporate Actions (Official)", NSE_CORPORATE_ACTIONS),
     ("LiveMint Markets", LIVEMINT_MARKETS),
     ("Economic Times Markets", ECONOMIC_TIMES_MARKETS),
-    ("Reuters (via Google News)", REUTERS_MARKETS),
 ]
 
 # ----------------------------
