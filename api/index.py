@@ -109,7 +109,7 @@ FEEDS_IN = [
 ]
 
 # US feeds (kept small; easy to expand later)
-REUTERS_MARKETS = "https://www.reutersagency.com/feed/?best-topics=markets&post_type=best"
+REUTERS_MARKETS = "https://news.google.com/rss/search?q=site%3Areuters.com&hl=en-US&gl=US&ceid=US%3Aen"
 MARKETWATCH_TOPSTORIES = "https://feeds.content.dowjones.io/public/rss/mw_topstories"
 INVESTING_US_NEWS = "https://www.investing.com/rss/news_25.rss"
 
