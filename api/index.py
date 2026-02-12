@@ -1,4 +1,7 @@
-# api/index.py (FULL UPDATED BACKEND) — Region gate (IN/US/ALL) + STRICT India-only + better “split” handling
+# api/index.py (FULL UPDATED BACKEND)
+# Region gate (IN/US/ALL) + STRICT India-only + better “split” handling
+# + Google News (Reuters) header fix (remove NSE referer for non-NSE, set en-US for news.google.com)
+
 from __future__ import annotations
 
 import calendar
@@ -108,12 +111,11 @@ FEEDS_IN = [
     ("Economic Times Markets", ECONOMIC_TIMES_MARKETS),
 ]
 
-# US feeds
+# US feeds (Reuters via Google News RSS)
 REUTERS_MARKETS = "https://news.google.com/rss/search?q=site%3Areuters.com&hl=en-US&gl=US&ceid=US%3Aen"
 
-
 FEEDS_US = [
-    ("Reuters Markets", REUTERS_MARKETS)
+    ("Reuters Markets", REUTERS_MARKETS),
 ]
 
 
@@ -152,6 +154,7 @@ HARD_FINANCE_KEYWORDS = [
     "brent", "wti", "crude", "oil", "gas",
 ]
 
+# “Soft” words that can appear in real market articles, but shouldn't be decisive alone.
 SOFT_CONTEXT_KEYWORDS = [
     "india", "indian", "us", "u.s.", "usa", "global", "budget", "fiscal"
 ]
@@ -174,6 +177,7 @@ TAG_RULES: dict[str, list[str]] = {
     "Macro": ["inflation", "cpi", "gdp", "pmi", "rates", "repo", "crr", "fiscal", "budget", "yield", "yields", "treasury"],
 }
 
+# NSE feeds can be temperamental; these headers reduce blocks/timeouts.
 REQUEST_HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Macintosh; Intel Mac OS X) AppleWebKit/537.36 "
@@ -260,9 +264,11 @@ def classify_item_region(title: str, summary: str) -> str:
 def passes_filter(text: str) -> bool:
     t = (text or "").lower()
 
+    # Hard excludes first
     if any(x in t for x in EXCLUDE_KEYWORDS):
         return False
 
+    # Must match at least one hard finance keyword OR a finance hint pattern
     if any(k in t for k in HARD_FINANCE_KEYWORDS):
         return True
 
@@ -285,9 +291,21 @@ def fetch_feed(url: str) -> feedparser.FeedParserDict | None:
     """
     feedparser bozo=1 can still have usable entries.
     Only treat as failure when entries are empty.
+
+    Also:
+    - Don't send NSE referer to non-NSE sources (can reduce odd blocks).
+    - Google News is happier with en-US language.
     """
     try:
-        r = requests.get(url, headers=REQUEST_HEADERS, timeout=15)
+        headers = dict(REQUEST_HEADERS)
+
+        if "nseindia.com" not in url:
+            headers.pop("Referer", None)
+
+        if "news.google.com" in url:
+            headers["Accept-Language"] = "en-US,en;q=0.9"
+
+        r = requests.get(url, headers=headers, timeout=15)
         r.raise_for_status()
 
         feed = feedparser.parse(r.content)
