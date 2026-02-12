@@ -342,9 +342,11 @@ def api_news():
             return inter / union if union else 0.0
 
         # Threshold tuned to aggressively group "same story" variants
-        # like LiveMint vs Economic Times versions of the same headline,
-        # without collapsing genuinely different news.
-        SIM_THRESHOLD = 0.7
+        # (wording differences, Rs/₹, etc.) without collapsing genuinely
+        # different companies or events. 0.6 gives us a bit more slack
+        # than a very strict 0.7 while still keeping Bharat Forge vs
+        # Coal India clearly separate.
+        SIM_THRESHOLD = 0.6
 
         for it in items:
             tokens = title_tokens(it.get("norm_title", ""))
