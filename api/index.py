@@ -188,7 +188,7 @@ EXCLUDE_KEYWORDS = [
     "actor", "actress", "celebrity",
     "valentine", "valentines", "valentine's",
     "tourism", "tourist", "travel", "picnic spot", "weekend getaway",
-    "ott", "netflix", "prime video", "hotstar", "disney+",
+    "ott", "netflix", "prime video", "hotstar", "disney+", "nandi hills"
     "bollywood", "tollywood", "kollywood", "hollywood", "neet", "jee", "exam", "entrance test", "percentile", "cutoff", "admission", "seat",
 ]
 
