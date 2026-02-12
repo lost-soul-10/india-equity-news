@@ -95,8 +95,7 @@ ECONOMIC_TIMES_MARKETS = "https://economictimes.indiatimes.com/markets/rssfeeds/
 
 # US/global feeds
 REUTERS_MARKETS = "https://news.google.com/rss/search?q=site%3Areuters.com&hl=en-US&gl=US&ceid=US%3Aen"
-MARKETWATCH_TOPSTORIES = "https://feeds.content.dowjones.io/public/rss/mw_topstories"
-INVESTING_US_NEWS = "https://www.investing.com/rss/news_25.rss"
+
 
 FEEDS = [
     ("NSE Announcements", NSE_ANNOUNCEMENTS),
@@ -107,8 +106,6 @@ FEEDS = [
     ("LiveMint Markets", LIVEMINT_MARKETS),
     ("Economic Times Markets", ECONOMIC_TIMES_MARKETS),
     ("Reuters (via Google News)", REUTERS_MARKETS),
-    ("MarketWatch Top Stories", MARKETWATCH_TOPSTORIES),
-    ("Investing.com US News", INVESTING_US_NEWS),
 ]
 
 # ----------------------------
