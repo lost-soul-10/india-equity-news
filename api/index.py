@@ -1,7 +1,3 @@
-# api/index.py (FULL UPDATED BACKEND) — NO region filter (shows everything)
-# Keeps: Reuters via Google News + item-level region classification (metadata only) + de-dupe + relevance sort
-# Fixes: "split" false positives (uses stock split/share split) + safer headers for Google News vs NSE
-
 from __future__ import annotations
 
 import calendar
@@ -81,9 +77,8 @@ def count_occurrences(haystack: str, needle: str) -> int:
 
 
 # ----------------------------
-# Feeds (all)
+# Feeds (India only)
 # ----------------------------
-# India feeds
 NSE_ANNOUNCEMENTS = "https://nsearchives.nseindia.com/content/RSS/Online_announcements.xml"
 NSE_CORPORATE_ACTIONS = "https://nsearchives.nseindia.com/content/RSS/Corporate_action.xml"
 NSE_BOARD_MEETINGS = "https://nsearchives.nseindia.com/content/RSS/Board_Meetings.xml"
@@ -92,7 +87,6 @@ HINDUSTAN_TIMES_BUSINESS = "https://www.hindustantimes.com/feeds/rss/business/rs
 NDTV_PROFIT = "https://feeds.feedburner.com/ndtvprofit-latest"
 LIVEMINT_MARKETS = "https://www.livemint.com/rss/markets"
 ECONOMIC_TIMES_MARKETS = "https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms"
-
 
 FEEDS = [
     ("NSE Announcements", NSE_ANNOUNCEMENTS),
@@ -131,7 +125,7 @@ HARD_FINANCE_KEYWORDS = [
 ]
 
 SOFT_CONTEXT_KEYWORDS = [
-    "india", "indian", "us", "u.s.", "usa", "global", "budget", "fiscal"
+    "india", "indian", "global", "budget", "fiscal"
 ]
 
 EXCLUDE_KEYWORDS = [
@@ -168,72 +162,6 @@ FINANCE_HINT_PATTERNS = [
     r"\b(mcap|market cap)\b",
 ]
 
-# ----------------------------
-# Region classifier (metadata only)
-# ----------------------------
-US_EQUITY_KEYWORDS = [
-    "us stocks", "u.s. stocks", "us stock market", "u.s. stock market",
-    "wall street",
-    "nyse", "nasdaq", "dow", "dow jones",
-    "s&p", "s&p 500", "sp500", "nasdaq 100",
-    "russell 2000",
-    "u.s. treasury", "us treasury", "treasury yield", "treasury yields",
-    "fomc",
-]
-
-INDIA_MARKET_KEYWORDS = [
-    "nse", "bse", "nifty", "sensex", "sgx nifty", "gift nifty",
-    "sebi", "rbi", "mcx", "ncdex",
-    "dalal street",
-    "rupee", "inr", "₹",
-]
-
-US_TICKER_PATTERNS = [
-    r"\$[a-z]{1,5}\b",          # $aapl
-    r"\b[a-z]{1,5}\.(o|n)\b",   # aapl.o / tsla.o / ibm.n
-    r"\bbrk\.[ab]\b",           # brk.a / brk.b
-]
-
-US_MEGA_NAMES = [
-    "apple", "microsoft", "amazon", "alphabet", "google", "meta", "nvidia", "tesla",
-    "netflix", "intel", "amd", "qualcomm", "broadcom",
-    "jpmorgan", "goldman", "morgan stanley",
-]
-
-
-def classify_item_region(title: str, summary: str) -> str:
-    """
-    Returns: "IN", "US", or "GLOBAL"
-    Used for metadata/debug only (no filtering).
-    """
-    t = f"{title} {summary}".lower()
-
-    # Fast-path: obvious US market phrasing
-    if "us stocks" in t or "u.s. stocks" in t or "wall street" in t:
-        return "US"
-    if ("treasury" in t or "treasury yield" in t or "treasury yields" in t) and ("us " in t or "u.s." in t):
-        return "US"
-
-    us_score = 0
-    in_score = 0
-
-    us_score += sum(2 for k in US_EQUITY_KEYWORDS if k in t)
-    in_score += sum(2 for k in INDIA_MARKET_KEYWORDS if k in t)
-
-    if any(re.search(p, t) for p in US_TICKER_PATTERNS):
-        us_score += 3
-
-    us_score += sum(1 for n in US_MEGA_NAMES if n in t)
-
-    if "₹" in t or "inr" in t or "rupee" in t:
-        in_score += 2
-
-    if us_score >= 4 and us_score > in_score:
-        return "US"
-    if in_score >= 4 and in_score >= us_score:
-        return "IN"
-    return "GLOBAL"
-
 
 def passes_filter(text: str) -> bool:
     t = (text or "").lower()
@@ -266,16 +194,11 @@ def fetch_feed(url: str) -> feedparser.FeedParserDict | None:
 
     Header fix:
     - Don't send NSE referer to non-NSE sources
-    - Google News prefers en-US
     """
     try:
         headers = dict(REQUEST_HEADERS)
-
         if "nseindia.com" not in url:
             headers.pop("Referer", None)
-
-        if "news.google.com" in url:
-            headers["Accept-Language"] = "en-US,en;q=0.9"
 
         r = requests.get(url, headers=headers, timeout=15)
         r.raise_for_status()
@@ -344,9 +267,6 @@ def api_news():
             )
             published = fmt_ts_ist(pub_ts)
 
-            # Region classification (metadata only)
-            item_region = classify_item_region(title, summary)
-
             # Relevance scoring (simple, explainable)
             base_text = f"{title} {summary}".lower()
             score = 0
@@ -371,7 +291,6 @@ def api_news():
                     "published_ts": pub_ts,
                     "score": score,
                     "tags": tags,
-                    "item_region": item_region,
                     "norm_title": normalize_title(title),
                 }
             )
@@ -404,7 +323,6 @@ def api_news():
     else:
         items.sort(key=lambda x: x.get("published_ts", 0), reverse=True)
 
-    # Output items
     out_items = []
     for it in items[:150]:
         out_items.append(
@@ -415,7 +333,6 @@ def api_news():
                 "summary": it["summary"],
                 "published": it["published"],
                 "tags": it.get("tags", []),
-                "region": it.get("item_region"),  # metadata only
                 "dupe_count": it.get("dupe_count", 0),
                 "dupe_sources": it.get("dupe_sources", []),
             }
