@@ -182,10 +182,12 @@ SOFT_CONTEXT_KEYWORDS = [
 EXCLUDE_KEYWORDS = [
     # Crypto
     "crypto", "bitcoin", "ethereum",
-    # Entertainment / box office noise
+    # Entertainment / box office / lifestyle / travel noise
     "box office", "collection", "collections", "day 1", "day 2", "day 3", "weekend collection",
     "movie", "film", "cinema", "trailer", "teaser", "song", "songs",
-    "actor", "actress", "celebrity", "valentines",
+    "actor", "actress", "celebrity",
+    "valentine", "valentines", "valentine's",
+    "tourism", "tourist", "travel", "picnic spot", "weekend getaway",
     "ott", "netflix", "prime video", "hotstar", "disney+",
     "bollywood", "tollywood", "kollywood", "hollywood", "neet", "jee", "exam", "entrance test", "percentile", "cutoff", "admission", "seat",
 ]
