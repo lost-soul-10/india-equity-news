@@ -642,7 +642,25 @@
         }
 
         updateLastOkUI();
-        setStatus(`${data.count} items`, data.generated_at);
+
+        const total = (typeof data.total_count === "number")
+          ? data.total_count
+          : (typeof data.count === "number" ? data.count : (data.items || []).length);
+
+        const unique = (typeof data.unique_count === "number")
+          ? data.unique_count
+          : (typeof data.count === "number" ? data.count : (data.items || []).length);
+
+        const hidden = (typeof data.duplicates_hidden === "number")
+          ? data.duplicates_hidden
+          : Math.max(total - unique, 0);
+
+        if (groupEl.checked && hidden > 0) {
+          setStatus(`${unique} unique headlines (${hidden} duplicates grouped)`, data.generated_at);
+        } else {
+          setStatus(`${total} items`, data.generated_at);
+        }
+
         render(data.items);
 
         isFirstLoad = false;

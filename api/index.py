@@ -298,6 +298,9 @@ def api_news():
                 }
             )
 
+    # Total items before any de-duplication
+    raw_count = len(items)
+
     # Group duplicates (by normalized title)
     if group_dupes:
         grouped: dict[str, dict] = {}
@@ -341,11 +344,18 @@ def api_news():
             }
         )
 
+    total_count = raw_count
+    unique_count = len(items)
+    duplicates_hidden = max(total_count - unique_count, 0) if group_dupes else 0
+
     resp = make_response(
         jsonify(
             {
                 "sources": [s for (s, _) in FEEDS],
-                "count": len(items),
+                "count": unique_count,
+                "total_count": total_count,
+                "unique_count": unique_count,
+                "duplicates_hidden": duplicates_hidden,
                 "items": out_items,
                 "generated_at": fmt_ts_ist(int(time.time())),
                 "feed_failures": feed_failures,
