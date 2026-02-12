@@ -134,15 +134,11 @@ NSE_ANNOUNCEMENTS = "https://nsearchives.nseindia.com/content/RSS/Online_announc
 NSE_CORPORATE_ACTIONS = "https://nsearchives.nseindia.com/content/RSS/Corporate_action.xml"
 NSE_BOARD_MEETINGS = "https://nsearchives.nseindia.com/content/RSS/Board_Meetings.xml"
 
-HINDUSTAN_TIMES_BUSINESS = "https://www.hindustantimes.com/feeds/rss/business/rssfeed.xml"
-NDTV_PROFIT = "https://feeds.feedburner.com/ndtvprofit-latest"
 LIVEMINT_MARKETS = "https://www.livemint.com/rss/markets"
 ECONOMIC_TIMES_MARKETS = "https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms"
 
 FEEDS = [
     ("NSE Announcements", NSE_ANNOUNCEMENTS),
-    ("Hindustan Times Business", HINDUSTAN_TIMES_BUSINESS),
-    ("NDTV Business", NDTV_PROFIT),
     ("NSE Board Meetings", NSE_BOARD_MEETINGS),
     ("NSE Corporate Actions (Official)", NSE_CORPORATE_ACTIONS),
     ("LiveMint Markets", LIVEMINT_MARKETS),
@@ -219,7 +215,7 @@ FINANCE_HINT_PATTERNS = [
 
 
 
-def passes_filter(text: str, source_name: str | None = None) -> bool:
+def passes_filter(text: str) -> bool:
     t = (text or "").lower()
 
     if any(x in t for x in EXCLUDE_KEYWORDS):
@@ -241,18 +237,7 @@ def passes_filter(text: str, source_name: str | None = None) -> bool:
     if hard_hit:
         return True
 
-    # Some feeds (e.g., NDTV Business / Hindustan Times Business) are
-    # quite broad and carry lifestyle / city stories that may mention
-    # rupee amounts once. For these, we only trust hard finance words
-    # and completely ignore hint-only matches so they don't pollute the
-    # markets view.
-    strict_sources = {
-        "NDTV Business",
-        "Hindustan Times Business",
-    }
-    is_strict = source_name in strict_sources if source_name else False
-
-    if not is_strict and hint_hits >= 2:
+    if hint_hits >= 2:
         return True
 
     return False
@@ -330,10 +315,8 @@ def api_news():
                 continue
 
             # Always include NSE feeds; filter only non-NSE sources.
-            # For broad business feeds (NDTV / HT), the filter is
-            # source-aware so that city / lifestyle pieces don't slip in.
             if not source_name.startswith("NSE "):
-                if not passes_filter(f"{title} {summary}", source_name=source_name):
+                if not passes_filter(f"{title} {summary}"):
                     continue
 
             # User keyword filter (simple contains)
