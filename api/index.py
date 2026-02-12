@@ -185,7 +185,7 @@ EXCLUDE_KEYWORDS = [
     # Entertainment / box office noise
     "box office", "collection", "collections", "day 1", "day 2", "day 3", "weekend collection",
     "movie", "film", "cinema", "trailer", "teaser", "song", "songs",
-    "actor", "actress", "celebrity",
+    "actor", "actress", "celebrity", "valentines",
     "ott", "netflix", "prime video", "hotstar", "disney+",
     "bollywood", "tollywood", "kollywood", "hollywood", "neet", "jee", "exam", "entrance test", "percentile", "cutoff", "admission", "seat",
 ]
