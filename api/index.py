@@ -223,10 +223,23 @@ def passes_filter(text: str) -> bool:
     if any(x in t for x in EXCLUDE_KEYWORDS):
         return False
 
-    if any(k in t for k in HARD_FINANCE_KEYWORDS):
+    # Strong finance words (stocks, dividend, IPO, etc.)
+    hard_hit = any(k in t for k in HARD_FINANCE_KEYWORDS)
+
+    # Softer hints like currency / % move.
+    # Require at least TWO distinct hint patterns to avoid pulling in
+    # random local / lifestyle stories that just mention a rupee amount once.
+    hint_hits = 0
+    for p in FINANCE_HINT_PATTERNS:
+        if re.search(p, t):
+            hint_hits += 1
+            if hint_hits >= 2:
+                break
+
+    if hard_hit:
         return True
 
-    if any(re.search(p, t) for p in FINANCE_HINT_PATTERNS):
+    if hint_hits >= 2:
         return True
 
     return False
