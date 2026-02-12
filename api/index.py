@@ -186,7 +186,7 @@ EXCLUDE_KEYWORDS = [
     "box office", "collection", "collections", "day 1", "day 2", "day 3", "weekend collection",
     "movie", "film", "cinema", "trailer", "teaser", "song", "songs",
     "actor", "actress", "celebrity",
-    "valentine", "valentines", "valentine's",
+    "valentine", "valentines", "valentine's", "T20", "IPL", 
     "tourism", "tourist", "travel", "picnic spot", "weekend getaway",
     "ott", "netflix", "prime video", "hotstar", "disney+", "nandi hills"
     "bollywood", "tollywood", "kollywood", "hollywood", "neet", "jee", "exam", "entrance test", "percentile", "cutoff", "admission", "seat",
