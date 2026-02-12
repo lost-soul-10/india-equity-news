@@ -70,6 +70,32 @@ def normalize_title(title: str) -> str:
     return t
 
 
+def title_tokens(norm_title: str) -> set[str]:
+    """
+    Turn a normalized title into a bag of tokens for fuzzy de-duplication.
+    We keep this simple and fast so we can safely run it across all items.
+    """
+    if not norm_title:
+        return set()
+    # Small stopword list to avoid over-weighting glue words.
+    stop = {
+        "the",
+        "a",
+        "an",
+        "of",
+        "to",
+        "for",
+        "and",
+        "on",
+        "in",
+        "at",
+        "by",
+        "from",
+        "with",
+    }
+    return {tok for tok in norm_title.split() if tok and tok not in stop}
+
+
 def count_occurrences(haystack: str, needle: str) -> int:
     if not haystack or not needle:
         return 0
@@ -301,27 +327,61 @@ def api_news():
     # Total items before any de-duplication
     raw_count = len(items)
 
-    # Group duplicates (by normalized title)
+    # Group duplicates (by fuzzy-normalized title)
     if group_dupes:
-        grouped: dict[str, dict] = {}
+        groups: list[dict] = []
+        group_tokens: list[set[str]] = []
+
+        def jaccard(a: set[str], b: set[str]) -> float:
+            if not a or not b:
+                return 0.0
+            inter = len(a & b)
+            if not inter:
+                return 0.0
+            union = len(a | b)
+            return inter / union if union else 0.0
+
+        # Threshold tuned to aggressively group "same story" variants
+        # like LiveMint vs Economic Times versions of the same headline,
+        # without collapsing genuinely different news.
+        SIM_THRESHOLD = 0.7
+
         for it in items:
-            key = it["norm_title"] or (it["link"] or it["title"])
-            if key not in grouped:
+            tokens = title_tokens(it.get("norm_title", ""))
+
+            # Always group identical links together as a hard duplicate.
+            best_idx = None
+            best_sim = 0.0
+            for idx, existing in enumerate(groups):
+                if it.get("link") and it["link"] == existing.get("link"):
+                    best_idx = idx
+                    best_sim = 1.0
+                    break
+
+                sim = jaccard(tokens, group_tokens[idx])
+                if sim > best_sim:
+                    best_sim = sim
+                    best_idx = idx
+
+            if best_idx is None or best_sim < SIM_THRESHOLD:
+                # New group
                 it["dupe_sources"] = [it["source"]]
                 it["dupe_count"] = 0
-                grouped[key] = it
-                continue
-
-            best = grouped[key]
-            if (it["published_ts"] or 0) > (best["published_ts"] or 0):
-                it["dupe_sources"] = best.get("dupe_sources", []) + [it["source"]]
-                it["dupe_count"] = best.get("dupe_count", 0) + 1
-                grouped[key] = it
+                groups.append(it)
+                group_tokens.append(tokens)
             else:
-                best["dupe_sources"] = best.get("dupe_sources", []) + [it["source"]]
-                best["dupe_count"] = best.get("dupe_count", 0) + 1
+                # Merge into existing group and keep the most recent as representative.
+                best = groups[best_idx]
+                if (it.get("published_ts") or 0) > (best.get("published_ts") or 0):
+                    it["dupe_sources"] = best.get("dupe_sources", []) + [it["source"]]
+                    it["dupe_count"] = best.get("dupe_count", 0) + 1
+                    groups[best_idx] = it
+                    group_tokens[best_idx] = tokens
+                else:
+                    best["dupe_sources"] = best.get("dupe_sources", []) + [it["source"]]
+                    best["dupe_count"] = best.get("dupe_count", 0) + 1
 
-        items = list(grouped.values())
+        items = groups
 
     # Sorting
     if sort_mode == "relevance":
