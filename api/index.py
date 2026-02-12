@@ -136,7 +136,7 @@ EXCLUDE_KEYWORDS = [
     "movie", "film", "cinema", "trailer", "teaser", "song", "songs",
     "actor", "actress", "celebrity",
     "ott", "netflix", "prime video", "hotstar", "disney+",
-    "bollywood", "tollywood", "kollywood", "hollywood",
+    "bollywood", "tollywood", "kollywood", "hollywood", "neet", "jee", "exam", "entrance test", "percentile", "cutoff", "admission", "seat",
 ]
 
 TAG_RULES: dict[str, list[str]] = {
@@ -157,10 +157,13 @@ REQUEST_HEADERS = {
 }
 
 FINANCE_HINT_PATTERNS = [
-    r"\b₹\s?\d", r"\brs\.?\s?\d", r"\b%\b",
-    r"\b(q[1-4]|fy\d{2})\b",
+    r"\b₹\s?\d",              # currency
+    r"\brs\.?\s?\d",          # rupees
+    r"\b(q[1-4]|fy\d{2})\b",  # quarters / financial years
     r"\b(mcap|market cap)\b",
+    r"\b\d+(\.\d+)?%\s?(gain|rise|fall|drop|up|down)\b",  # % tied to price moves
 ]
+
 
 
 def passes_filter(text: str) -> bool:
