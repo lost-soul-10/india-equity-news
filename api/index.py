@@ -1,6 +1,6 @@
-# api/index.py (FULL UPDATED BACKEND)
-# Region gate (IN/US/ALL) + STRICT India-only + better “split” handling
-# + Google News (Reuters) header fix (remove NSE referer for non-NSE, set en-US for news.google.com)
+# api/index.py (FULL UPDATED BACKEND) — NO region filter (shows everything)
+# Keeps: Reuters via Google News + item-level region classification (metadata only) + de-dupe + relevance sort
+# Fixes: "split" false positives (uses stock split/share split) + safer headers for Google News vs NSE
 
 from __future__ import annotations
 
@@ -80,16 +80,8 @@ def count_occurrences(haystack: str, needle: str) -> int:
     return haystack.lower().count(needle.lower())
 
 
-def parse_region_param(raw: str | None) -> str:
-    """
-    Accepts: IN, US, ALL (case-insensitive). Defaults to IN.
-    """
-    r = (raw or "IN").strip().upper()
-    return r if r in ("IN", "US", "ALL") else "IN"
-
-
 # ----------------------------
-# Feeds (split by region)
+# Feeds (all)
 # ----------------------------
 # India feeds
 NSE_ANNOUNCEMENTS = "https://nsearchives.nseindia.com/content/RSS/Online_announcements.xml"
@@ -101,7 +93,12 @@ NDTV_PROFIT = "https://feeds.feedburner.com/ndtvprofit-latest"
 LIVEMINT_MARKETS = "https://www.livemint.com/rss/markets"
 ECONOMIC_TIMES_MARKETS = "https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms"
 
-FEEDS_IN = [
+# US/global feeds
+REUTERS_MARKETS = "https://news.google.com/rss/search?q=site%3Areuters.com&hl=en-US&gl=US&ceid=US%3Aen"
+MARKETWATCH_TOPSTORIES = "https://feeds.content.dowjones.io/public/rss/mw_topstories"
+INVESTING_US_NEWS = "https://www.investing.com/rss/news_25.rss"
+
+FEEDS = [
     ("NSE Announcements", NSE_ANNOUNCEMENTS),
     ("Hindustan Times Business", HINDUSTAN_TIMES_BUSINESS),
     ("NDTV Business", NDTV_PROFIT),
@@ -109,28 +106,14 @@ FEEDS_IN = [
     ("NSE Corporate Actions (Official)", NSE_CORPORATE_ACTIONS),
     ("LiveMint Markets", LIVEMINT_MARKETS),
     ("Economic Times Markets", ECONOMIC_TIMES_MARKETS),
+    ("Reuters (via Google News)", REUTERS_MARKETS),
+    ("MarketWatch Top Stories", MARKETWATCH_TOPSTORIES),
+    ("Investing.com US News", INVESTING_US_NEWS),
 ]
-
-# US feeds (Reuters via Google News RSS)
-REUTERS_MARKETS = "https://news.google.com/rss/search?q=site%3Areuters.com&hl=en-US&gl=US&ceid=US%3Aen"
-
-FEEDS_US = [
-    ("Reuters Markets", REUTERS_MARKETS),
-]
-
-
-def get_feeds_for_region(region: str) -> list[tuple[str, str]]:
-    if region == "US":
-        return FEEDS_US
-    if region == "ALL":
-        return FEEDS_IN + FEEDS_US
-    return FEEDS_IN
-
 
 # ----------------------------
 # Filtering + tagging
 # ----------------------------
-# IMPORTANT: remove plain "split" to avoid false positives like "iOS update splits sections".
 HARD_FINANCE_KEYWORDS = [
     # India markets
     "nse", "bse", "nifty", "sensex",
@@ -154,7 +137,6 @@ HARD_FINANCE_KEYWORDS = [
     "brent", "wti", "crude", "oil", "gas",
 ]
 
-# “Soft” words that can appear in real market articles, but shouldn't be decisive alone.
 SOFT_CONTEXT_KEYWORDS = [
     "india", "indian", "us", "u.s.", "usa", "global", "budget", "fiscal"
 ]
@@ -177,7 +159,6 @@ TAG_RULES: dict[str, list[str]] = {
     "Macro": ["inflation", "cpi", "gdp", "pmi", "rates", "repo", "crr", "fiscal", "budget", "yield", "yields", "treasury"],
 }
 
-# NSE feeds can be temperamental; these headers reduce blocks/timeouts.
 REQUEST_HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Macintosh; Intel Mac OS X) AppleWebKit/537.36 "
@@ -195,7 +176,7 @@ FINANCE_HINT_PATTERNS = [
 ]
 
 # ----------------------------
-# Region classifier (content-based)
+# Region classifier (metadata only)
 # ----------------------------
 US_EQUITY_KEYWORDS = [
     "us stocks", "u.s. stocks", "us stock market", "u.s. stock market",
@@ -204,7 +185,6 @@ US_EQUITY_KEYWORDS = [
     "s&p", "s&p 500", "sp500", "nasdaq 100",
     "russell 2000",
     "u.s. treasury", "us treasury", "treasury yield", "treasury yields",
-    "10-year treasury", "2-year treasury", "ten-year treasury",
     "fomc",
 ]
 
@@ -231,6 +211,7 @@ US_MEGA_NAMES = [
 def classify_item_region(title: str, summary: str) -> str:
     """
     Returns: "IN", "US", or "GLOBAL"
+    Used for metadata/debug only (no filtering).
     """
     t = f"{title} {summary}".lower()
 
@@ -264,11 +245,9 @@ def classify_item_region(title: str, summary: str) -> str:
 def passes_filter(text: str) -> bool:
     t = (text or "").lower()
 
-    # Hard excludes first
     if any(x in t for x in EXCLUDE_KEYWORDS):
         return False
 
-    # Must match at least one hard finance keyword OR a finance hint pattern
     if any(k in t for k in HARD_FINANCE_KEYWORDS):
         return True
 
@@ -292,9 +271,9 @@ def fetch_feed(url: str) -> feedparser.FeedParserDict | None:
     feedparser bozo=1 can still have usable entries.
     Only treat as failure when entries are empty.
 
-    Also:
-    - Don't send NSE referer to non-NSE sources (can reduce odd blocks).
-    - Google News is happier with en-US language.
+    Header fix:
+    - Don't send NSE referer to non-NSE sources
+    - Google News prefers en-US
     """
     try:
         headers = dict(REQUEST_HEADERS)
@@ -334,14 +313,10 @@ def api_news():
     sort_mode = (request.args.get("sort") or "latest").strip().lower()  # latest | relevance
     group_dupes = (request.args.get("group") or "").strip().lower() in ("1", "true", "yes", "on")
 
-    # REGION param: IN | US | ALL (default IN)
-    region = parse_region_param(request.args.get("region"))
-    feeds = get_feeds_for_region(region)
-
     items: list[dict] = []
     feed_failures: list[str] = []
 
-    for source_name, url in feeds:
+    for source_name, url in FEEDS:
         if src and src != source_name:
             continue
 
@@ -369,28 +344,15 @@ def api_news():
                 if q not in hay:
                     continue
 
-            # Item-level region classification
-            item_region = classify_item_region(title, summary)
-
-            # STRICT region gate:
-            # - IN shows ONLY IN
-            # - US shows ONLY US
-            # - ALL shows everything
-            if region == "IN":
-                if item_region != "IN":
-                    continue
-            elif region == "US":
-                if item_region != "US":
-                    continue
-            else:
-                pass
-
             pub_ts = (
                 to_ts_utc(e.get("published_parsed"))
                 or to_ts_utc(e.get("updated_parsed"))
                 or 0
             )
             published = fmt_ts_ist(pub_ts)
+
+            # Region classification (metadata only)
+            item_region = classify_item_region(title, summary)
 
             # Relevance scoring (simple, explainable)
             base_text = f"{title} {summary}".lower()
@@ -460,7 +422,7 @@ def api_news():
                 "summary": it["summary"],
                 "published": it["published"],
                 "tags": it.get("tags", []),
-                "region": it.get("item_region"),
+                "region": it.get("item_region"),  # metadata only
                 "dupe_count": it.get("dupe_count", 0),
                 "dupe_sources": it.get("dupe_sources", []),
             }
@@ -469,8 +431,7 @@ def api_news():
     resp = make_response(
         jsonify(
             {
-                "sources": [s for (s, _) in feeds],
-                "region": region,
+                "sources": [s for (s, _) in FEEDS],
                 "count": len(items),
                 "items": out_items,
                 "generated_at": fmt_ts_ist(int(time.time())),

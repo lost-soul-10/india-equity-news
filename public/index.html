@@ -1,10 +1,10 @@
-<!-- index.html (FULL UPDATED FRONTEND) — adds Region selector + passes region=IN|US|ALL -->
+<!-- public/index.html (FULL UPDATED FRONTEND) — NO region dropdown -->
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title> Equity Markets</title>
+  <title>Equity Markets</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -100,10 +100,9 @@
       backdrop-filter: blur(10px);
     }
 
-    /* UPDATED: added Region column */
     .row {
       display: grid;
-      grid-template-columns: 1fr 220px 170px 140px auto;
+      grid-template-columns: 1fr 220px 170px auto;
       gap: 10px;
       align-items: center;
     }
@@ -309,7 +308,7 @@
   <div class="wrap">
     <header>
       <div class="brand">
-        <h1> Equity Markets</h1>
+        <h1>Equity Markets</h1>
         <p>Minimal headline feed from NSE + curated sources. Filter by keyword or source. Auto-refresh every 15 minutes.</p>
       </div>
 
@@ -321,7 +320,7 @@
 
     <div class="toolbar">
       <div class="row">
-        <input id="q" placeholder="Keyword (e.g., dividend, buyback, split, results, Reliance)" />
+        <input id="q" placeholder="Keyword (e.g., dividend, buyback, results, Reliance)" />
 
         <select id="src">
           <option value="">All sources</option>
@@ -330,13 +329,6 @@
         <select id="sort">
           <option value="latest">Sort: Latest</option>
           <option value="relevance">Sort: Most relevant</option>
-        </select>
-
-        <!-- NEW: Region selector -->
-        <select id="region" title="Choose region feed">
-          <option value="IN">Region: India</option>
-          <option value="US">Region: US</option>
-          <option value="ALL">Region: All</option>
         </select>
 
         <div class="actions" style="display:flex; gap:10px;">
@@ -377,7 +369,6 @@
     const srcEl = document.getElementById("src");
     const sortEl = document.getElementById("sort");
     const groupEl = document.getElementById("group");
-    const regionEl = document.getElementById("region"); // NEW
 
     const statusEl = document.getElementById("status");
     const lastOkEl = document.getElementById("lastOk");
@@ -407,8 +398,6 @@
       srcEl.value = p.get("src") || "";
       sortEl.value = p.get("sort") || "latest";
       groupEl.checked = (p.get("group") || "") === "1";
-      regionEl.value = (p.get("region") || "IN").toUpperCase(); // NEW
-      if (!["IN","US","ALL"].includes(regionEl.value)) regionEl.value = "IN";
     }
 
     function updateURL() {
@@ -417,7 +406,6 @@
       if (srcEl.value.trim()) p.set("src", srcEl.value.trim());
       if (sortEl.value) p.set("sort", sortEl.value);
       if (groupEl.checked) p.set("group", "1");
-      if (regionEl.value) p.set("region", regionEl.value); // NEW (always include for clarity)
       const qs = p.toString();
       history.replaceState({}, "", qs ? `${location.pathname}?${qs}` : `${location.pathname}`);
     }
@@ -426,20 +414,15 @@
       if (!sources || !sources.length) return;
       const current = srcEl.value;
       const existing = new Set([...srcEl.options].map(o => o.value));
-
-      // If region changes, sources list changes. Rebuild cleanly.
-      // Keep "All sources" at top.
-      srcEl.innerHTML = `<option value="">All sources</option>`;
       sources.forEach(s => {
-        const opt = document.createElement("option");
-        opt.value = s;
-        opt.textContent = s;
-        srcEl.appendChild(opt);
+        if (!existing.has(s)) {
+          const opt = document.createElement("option");
+          opt.value = s;
+          opt.textContent = s;
+          srcEl.appendChild(opt);
+        }
       });
-
-      // Restore selection only if it exists in this region's sources
-      const stillExists = [...srcEl.options].some(o => o.value === current);
-      srcEl.value = stillExists ? current : "";
+      srcEl.value = current;
     }
 
     function showError(msg) {
@@ -578,13 +561,10 @@
           const i = Number(btn.getAttribute("data-pin"));
           const p = loadPins()[i];
           if (!p) return;
-
           qEl.value = p.q || "";
           srcEl.value = p.src || "";
           sortEl.value = p.sort || "latest";
           groupEl.checked = !!p.group;
-          regionEl.value = (p.region || "IN").toUpperCase(); // NEW
-
           fetchNews();
         });
       });
@@ -602,14 +582,7 @@
         if (exists) return;
 
         const label = q.length > 18 ? q.slice(0, 18) + "…" : q;
-        pinsNow.unshift({
-          label,
-          q,
-          src: srcEl.value,
-          sort: sortEl.value,
-          group: groupEl.checked,
-          region: regionEl.value // NEW: pin region too
-        });
+        pinsNow.unshift({ label, q, src: srcEl.value, sort: sortEl.value, group: groupEl.checked });
 
         savePins(pinsNow.slice(0, 3));
       });
@@ -630,7 +603,7 @@
       updateURL();
       clearError();
 
-      // “Most relevant” needs a keyword. Enforce so it’s not misleading.
+      // “Most relevant” needs a keyword.
       if (sortEl.value === "relevance" && !qEl.value.trim()) {
         showError("“Most relevant” needs a keyword.\n\nHow to use it:\n1) Type a keyword (e.g., “IPO”, “buyback”, “Reliance”)\n2) Select Sort: Most relevant\n3) Click Apply\n\nWithout a keyword, relevance has nothing to rank against.");
         sortEl.value = "latest";
@@ -641,7 +614,6 @@
       if (srcEl.value.trim()) p.set("src", srcEl.value.trim());
       p.set("sort", sortEl.value);
       if (groupEl.checked) p.set("group", "1");
-      p.set("region", (regionEl.value || "IN").toUpperCase()); // NEW
 
       if (isFirstLoad) {
         setStatus("Loading…");
@@ -697,7 +669,6 @@
       srcEl.value = "";
       sortEl.value = "latest";
       groupEl.checked = false;
-      regionEl.value = "IN"; // NEW: reset region to default
       fetchNews();
     });
 
@@ -706,10 +677,9 @@
       if (e.key === "Enter") fetchNews();
     });
 
-    // Apply on changes
+    // Optional: apply on changes
     sortEl.addEventListener("change", () => fetchNews());
     groupEl.addEventListener("change", () => fetchNews());
-    regionEl.addEventListener("change", () => fetchNews()); // NEW: change region refreshes
 
     // init
     setQueryFromURL();
