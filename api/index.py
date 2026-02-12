@@ -1,4 +1,4 @@
-# app.py (FULL UPDATED BACKEND) — adds region gate + item-level region classification
+# api/index.py (FULL UPDATED BACKEND) — Region gate (IN/US/ALL) + STRICT India-only + better “split” handling
 from __future__ import annotations
 
 import calendar
@@ -108,15 +108,12 @@ FEEDS_IN = [
     ("Economic Times Markets", ECONOMIC_TIMES_MARKETS),
 ]
 
-# US feeds (kept small; easy to expand later)
-REUTERS_MARKETS = "https://news.google.com/rss/search?q=site%3Areuters.com&hl=en-US&gl=US&ceid=US%3Aen"
-MARKETWATCH_TOPSTORIES = "https://feeds.content.dowjones.io/public/rss/mw_topstories"
-INVESTING_US_NEWS = "https://www.investing.com/rss/news_25.rss"
+# US feeds (small set; easy to expand later)
+REUTERS_MARKETS = "https://www.reutersagency.com/feed/?best-topics=markets&post_type=best"
+
 
 FEEDS_US = [
-    ("Reuters Markets", REUTERS_MARKETS),
-    ("MarketWatch Top Stories", MARKETWATCH_TOPSTORIES),
-    ("Investing.com US News", INVESTING_US_NEWS),
+    ("Reuters Markets", REUTERS_MARKETS)
 ]
 
 
@@ -129,8 +126,9 @@ def get_feeds_for_region(region: str) -> list[tuple[str, str]]:
 
 
 # ----------------------------
-# Filtering (your existing logic, plus region classification)
+# Filtering + tagging
 # ----------------------------
+# IMPORTANT: remove plain "split" to avoid false positives like "iOS update splits sections".
 HARD_FINANCE_KEYWORDS = [
     # India markets
     "nse", "bse", "nifty", "sensex",
@@ -138,7 +136,9 @@ HARD_FINANCE_KEYWORDS = [
     "stock", "stocks", "share", "shares", "equity", "equities", "mcap", "market cap",
     "rally", "selloff", "sell-off", "surge", "plunge", "falls", "fall", "drops", "drop", "jumps", "jump", "gains", "losses",
     # Corporate actions / events
-    "dividend", "buyback", "split", "bonus", "rights issue", "ipo",
+    "dividend", "buyback",
+    "stock split", "share split", "shares split", "split shares", "split ratio",
+    "bonus", "rights issue", "ipo",
     "block deal", "bulk deal",
     # Results
     "results", "earnings", "quarter", "quarterly", "q1", "q2", "q3", "q4", "fy", "guidance",
@@ -167,15 +167,13 @@ EXCLUDE_KEYWORDS = [
     "bollywood", "tollywood", "kollywood", "hollywood",
 ]
 
-# Lightweight “signal” tags (80/20 keyword rules)
 TAG_RULES: dict[str, list[str]] = {
-    "Corporate action": ["dividend", "buyback", "split", "bonus", "rights issue"],
+    "Corporate action": ["dividend", "buyback", "stock split", "share split", "bonus", "rights issue"],
     "Results": ["results", "earnings", "quarter", "q1", "q2", "q3", "q4", "fy", "guidance"],
     "Regulatory": ["sebi", "rbi", "regulator", "circular", "compliance", "penalty", "order"],
-    "Macro": ["inflation", "cpi", "gdp", "pmi", "rates", "repo", "crr", "fiscal", "budget", "yield"],
+    "Macro": ["inflation", "cpi", "gdp", "pmi", "rates", "repo", "crr", "fiscal", "budget", "yield", "yields", "treasury"],
 }
 
-# NSE feeds can be temperamental; these headers reduce blocks/timeouts.
 REQUEST_HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Macintosh; Intel Mac OS X) AppleWebKit/537.36 "
@@ -186,18 +184,24 @@ REQUEST_HEADERS = {
     "Referer": "https://www.nseindia.com/",
 }
 
-# Optional regex hints that catch legit market pieces even if keywords are missing
 FINANCE_HINT_PATTERNS = [
     r"\b₹\s?\d", r"\brs\.?\s?\d", r"\b%\b",
     r"\b(q[1-4]|fy\d{2})\b",
     r"\b(mcap|market cap)\b",
 ]
 
-# --- NEW: content-based region classifier ---
+# ----------------------------
+# Region classifier (content-based)
+# ----------------------------
 US_EQUITY_KEYWORDS = [
-    "wall street", "u.s. stocks", "us stocks", "american stocks",
-    "nyse", "nasdaq", "dow", "dow jones", "s&p", "s&p 500", "sp500", "nasdaq 100",
-    "russell 2000", "magnificent seven", "megacap tech",
+    "us stocks", "u.s. stocks", "us stock market", "u.s. stock market",
+    "wall street",
+    "nyse", "nasdaq", "dow", "dow jones",
+    "s&p", "s&p 500", "sp500", "nasdaq 100",
+    "russell 2000",
+    "u.s. treasury", "us treasury", "treasury yield", "treasury yields",
+    "10-year treasury", "2-year treasury", "ten-year treasury",
+    "fomc",
 ]
 
 INDIA_MARKET_KEYWORDS = [
@@ -209,7 +213,7 @@ INDIA_MARKET_KEYWORDS = [
 
 US_TICKER_PATTERNS = [
     r"\$[a-z]{1,5}\b",          # $aapl
-    r"\b[a-z]{1,5}\.(o|n)\b",   # aapl.o / tsla.o / ibm.n (Reuters-ish)
+    r"\b[a-z]{1,5}\.(o|n)\b",   # aapl.o / tsla.o / ibm.n
     r"\bbrk\.[ab]\b",           # brk.a / brk.b
 ]
 
@@ -220,38 +224,17 @@ US_MEGA_NAMES = [
 ]
 
 
-def passes_filter(text: str) -> bool:
-    t = (text or "").lower()
-
-    # Hard excludes first
-    if any(x in t for x in EXCLUDE_KEYWORDS):
-        return False
-
-    # Must match at least one hard finance keyword OR a finance hint pattern
-    if any(k in t for k in HARD_FINANCE_KEYWORDS):
-        return True
-
-    if any(re.search(p, t) for p in FINANCE_HINT_PATTERNS):
-        return True
-
-    return False
-
-
-def tag_item(title: str, summary: str) -> list[str]:
-    t = f"{title} {summary}".lower()
-    tags: list[str] = []
-    for tag, keys in TAG_RULES.items():
-        if any(k in t for k in keys):
-            tags.append(tag)
-    return tags
-
-
 def classify_item_region(title: str, summary: str) -> str:
     """
     Returns: "IN", "US", or "GLOBAL"
-    Heuristic, fast, explainable.
     """
     t = f"{title} {summary}".lower()
+
+    # Fast-path: obvious US market phrasing
+    if "us stocks" in t or "u.s. stocks" in t or "wall street" in t:
+        return "US"
+    if ("treasury" in t or "treasury yield" in t or "treasury yields" in t) and ("us " in t or "u.s." in t):
+        return "US"
 
     us_score = 0
     in_score = 0
@@ -274,9 +257,32 @@ def classify_item_region(title: str, summary: str) -> str:
     return "GLOBAL"
 
 
+def passes_filter(text: str) -> bool:
+    t = (text or "").lower()
+
+    if any(x in t for x in EXCLUDE_KEYWORDS):
+        return False
+
+    if any(k in t for k in HARD_FINANCE_KEYWORDS):
+        return True
+
+    if any(re.search(p, t) for p in FINANCE_HINT_PATTERNS):
+        return True
+
+    return False
+
+
+def tag_item(title: str, summary: str) -> list[str]:
+    t = f"{title} {summary}".lower()
+    tags: list[str] = []
+    for tag, keys in TAG_RULES.items():
+        if any(k in t for k in keys):
+            tags.append(tag)
+    return tags
+
+
 def fetch_feed(url: str) -> feedparser.FeedParserDict | None:
     """
-    IMPORTANT FIX:
     feedparser bozo=1 can still have usable entries.
     Only treat as failure when entries are empty.
     """
@@ -310,7 +316,7 @@ def api_news():
     sort_mode = (request.args.get("sort") or "latest").strip().lower()  # latest | relevance
     group_dupes = (request.args.get("group") or "").strip().lower() in ("1", "true", "yes", "on")
 
-    # REGION param (NEW): IN | US | ALL (default IN)
+    # REGION param: IN | US | ALL (default IN)
     region = parse_region_param(request.args.get("region"))
     feeds = get_feeds_for_region(region)
 
@@ -345,23 +351,27 @@ def api_news():
                 if q not in hay:
                     continue
 
-            # --- NEW: item-level region classification ---
+            # Item-level region classification
             item_region = classify_item_region(title, summary)
 
-            # Enforce region gate at the ITEM level
-            # Default behavior: IN includes IN + GLOBAL, but excludes US
-            # If you want strict IN-only, replace the IN branch with: if item_region != "IN": continue
+            # STRICT region gate:
+            # - IN shows ONLY IN
+            # - US shows ONLY US
+            # - ALL shows everything
             if region == "IN":
-                if item_region == "US":
+                if item_region != "IN":
                     continue
             elif region == "US":
-                if item_region == "IN":
+                if item_region != "US":
                     continue
             else:
-                # ALL keeps everything
                 pass
 
-            pub_ts = to_ts_utc(e.get("published_parsed")) or to_ts_utc(e.get("updated_parsed")) or 0
+            pub_ts = (
+                to_ts_utc(e.get("published_parsed"))
+                or to_ts_utc(e.get("updated_parsed"))
+                or 0
+            )
             published = fmt_ts_ist(pub_ts)
 
             # Relevance scoring (simple, explainable)
@@ -373,7 +383,6 @@ def api_news():
                 if q in title.lower():
                     score += 25
 
-            # small boost for finance signals regardless
             score += sum(1 for k in HARD_FINANCE_KEYWORDS if k in base_text)
             score += sum(1 for k in SOFT_CONTEXT_KEYWORDS if k in base_text)
 
@@ -389,7 +398,7 @@ def api_news():
                     "published_ts": pub_ts,
                     "score": score,
                     "tags": tags,
-                    "item_region": item_region,  # NEW (useful for UI/debug)
+                    "item_region": item_region,
                     "norm_title": normalize_title(title),
                 }
             )
@@ -406,7 +415,6 @@ def api_news():
                 continue
 
             best = grouped[key]
-            # keep newest item as the primary
             if (it["published_ts"] or 0) > (best["published_ts"] or 0):
                 it["dupe_sources"] = best.get("dupe_sources", []) + [it["source"]]
                 it["dupe_count"] = best.get("dupe_count", 0) + 1
@@ -423,7 +431,7 @@ def api_news():
     else:
         items.sort(key=lambda x: x.get("published_ts", 0), reverse=True)
 
-    # Output items: remove internal fields
+    # Output items
     out_items = []
     for it in items[:150]:
         out_items.append(
@@ -434,7 +442,7 @@ def api_news():
                 "summary": it["summary"],
                 "published": it["published"],
                 "tags": it.get("tags", []),
-                "region": it.get("item_region"),  # NEW
+                "region": it.get("item_region"),
                 "dupe_count": it.get("dupe_count", 0),
                 "dupe_sources": it.get("dupe_sources", []),
             }
