@@ -93,7 +93,32 @@ def title_tokens(norm_title: str) -> set[str]:
         "from",
         "with",
     }
-    return {tok for tok in norm_title.split() if tok and tok not in stop}
+    # Light-weight synonym / normalization so that wording
+    # differences like "falls" vs "down" or "rises" vs "up"
+    # still look similar for grouping purposes.
+    synonyms = {
+        "falls": "fall",
+        "falling": "fall",
+        "down": "fall",
+        "drops": "fall",
+        "drop": "fall",
+        "declines": "fall",
+        "slides": "fall",
+        "rises": "rise",
+        "rise": "rise",
+        "up": "rise",
+        "surges": "rise",
+        "jumps": "rise",
+        "rs": "rs",
+    }
+
+    tokens: set[str] = set()
+    for tok in norm_title.split():
+        if not tok or tok in stop:
+            continue
+        base = synonyms.get(tok, tok)
+        tokens.add(base)
+    return tokens
 
 
 def count_occurrences(haystack: str, needle: str) -> int:
@@ -343,10 +368,10 @@ def api_news():
 
         # Threshold tuned to aggressively group "same story" variants
         # (wording differences, Rs/₹, etc.) without collapsing genuinely
-        # different companies or events. 0.6 gives us a bit more slack
-        # than a very strict 0.7 while still keeping Bharat Forge vs
-        # Coal India clearly separate.
-        SIM_THRESHOLD = 0.6
+        # different companies or events. 0.5 is deliberately a bit
+        # permissive so that cross-source rewrites of the same headline
+        # are very likely to be grouped together.
+        SIM_THRESHOLD = 0.5
 
         for it in items:
             tokens = title_tokens(it.get("norm_title", ""))
